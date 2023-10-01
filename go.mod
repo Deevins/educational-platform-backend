@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/georgysavva/scany v1.2.1
+	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/spf13/viper v1.16.0
@@ -11,7 +12,7 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/georgysavva/scany/v2 v2.0.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

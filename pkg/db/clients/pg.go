@@ -37,8 +37,7 @@ type PostgresqlDatabase struct {
 	cluster *pgxpool.Pool
 }
 
-// Querier is something that pgxscan can query and get the pgx.Rows from. For example, it can be: *pgxpool.Pool, *pgx.Conn or pgx.Tx.
-func NewPostgresqlDatabase(cluster *pgxpool.Pool) *PostgresqlDatabase {
+func NewPgClient(cluster *pgxpool.Pool) *PostgresqlDatabase {
 	return &PostgresqlDatabase{cluster: cluster}
 }
 
@@ -62,15 +61,15 @@ func (db PostgresqlDatabase) ExecQueryRow(ctx context.Context, query string, arg
 	return db.cluster.QueryRow(ctx, query, args...)
 }
 
-// NewDB return instance of Database
-func NewDB(ctx context.Context, cfg config.Config) (*PostgresqlDatabase, error) {
+// NewPGClient func returns instance of PostgresSQL database client
+func NewPGClient(ctx context.Context, cfg config.Config) (*PostgresqlDatabase, error) {
 	dsn := generateDsn(cfg)
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewPostgresqlDatabase(pool), nil
+	return NewPgClient(pool), nil
 }
 
 func generateDsn(config config.Config) string {

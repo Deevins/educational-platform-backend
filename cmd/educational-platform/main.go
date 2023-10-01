@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("can not read config file %s", err.Error())
 	}
 
-	db, err := dbclients.NewDB(ctx, config.Config{
+	db, err := dbclients.NewPGClient(ctx, config.Config{
 		Host:     viper.GetString("db.host"),
 		Port:     viper.GetString("db.port"),
 		User:     viper.GetString("db.user"),
@@ -25,7 +25,7 @@ func main() {
 		SSLMode:  viper.GetString("db.sslmode"),
 	})
 	if err != nil {
-		log.Fatalf("can not connect to database intance in main package in method clients.NewDB: %s", err)
+		log.Fatalf("can not connect to db method clients.NewPgDB: %s", err)
 	}
 
 	defer db.GetPool(ctx).Close()
@@ -34,7 +34,7 @@ func main() {
 
 func initConfig() error {
 	viper.SetConfigType("yml")
-	viper.AddConfigPath("config")
+	viper.AddConfigPath("internal/config")
 	viper.SetConfigName("config")
 
 	return viper.ReadInConfig()
