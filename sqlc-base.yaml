@@ -1,0 +1,17 @@
+version: 2
+sql:
+  - engine: "postgresql"
+    queries: .
+    schema: migrations
+    source:
+      - "internal/infrastructure/repository/*/query.sql"
+    gen:
+      go:
+        emit_interface: true
+        output_files_suffix: "_sqlc"
+        output_db_file_name: "db_sqlc.go"
+        emit_pointers_for_null_types: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        sql_package: pgx/v5
+        overrides:

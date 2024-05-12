@@ -61,8 +61,8 @@ func (db PostgresqlDatabase) ExecQueryRow(ctx context.Context, query string, arg
 	return db.cluster.QueryRow(ctx, query, args...)
 }
 
-// NewPGClient func returns instance of PostgresSQL database client
-func NewPGClient(ctx context.Context, cfg config.Config) (*PostgresqlDatabase, error) {
+// NewPostgres func returns instance of PostgresSQL database client
+func NewPostgres(ctx context.Context, cfg config.Config) (*PostgresqlDatabase, error) {
 	dsn := generateDsn(cfg)
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

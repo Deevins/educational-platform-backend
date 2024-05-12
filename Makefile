@@ -1,9 +1,14 @@
 ifeq ($(POSTGRES_SETUP_STRING),)
-	POSTGRES_SETUP_STRING := user=test password=test dbname=postgres host=localhost port=5432 sslmode=disable
+	POSTGRES_SETUP_STRING := user=postgres password=postgres dbname=pg host=localhost port=5432 sslmode=disable
 endif
 
 INTERNAL_PKG_PATH=$(CURDIR)/internal/pkg
 MIGRATION_FOLDER=$(CURDIR)/migrations
+EDUCATIONAL_PLATFORM_MAIN = $(CURDIR)/cmd/educational-platform/main.go
+
+.PHONY: run
+run:
+	go build "$(EDUCATIONAL_PLATFORM_MAIN)"/cmd/educational-platform
 
 .PHONY: migration-create
 migration-create:
@@ -16,6 +21,10 @@ migration-up:
 .PHONY: migration-down
 migration-down:
 	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP_STRING)" down
+
+.PHONY: migration-reset
+migration-reset:
+	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP_STRING)" reset
 
 .PHONY: compose-up
 compose-up:
