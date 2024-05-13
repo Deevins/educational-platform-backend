@@ -34,6 +34,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (int32,
 	return id, err
 }
 
+const getHasUserTriedInstructor = `-- name: GetHasUserTriedInstructor :one
+SELECT has_user_tried_instructor from human_resources.users WHERE id = $1
+`
+
+func (q *Queries) GetHasUserTriedInstructor(ctx context.Context, id int32) (*bool, error) {
+	row := q.db.QueryRow(ctx, getHasUserTriedInstructor, id)
+	var has_user_tried_instructor *bool
+	err := row.Scan(&has_user_tried_instructor)
+	return has_user_tried_instructor, err
+}
+
 const getUserByEmailAndHashedPassword = `-- name: GetUserByEmailAndHashedPassword :one
 SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE email = $1 AND password_hashed = $2
 `
@@ -116,4 +127,13 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateHasUserTriedInstructor = `-- name: UpdateHasUserTriedInstructor :exec
+UPDATE human_resources.users SET has_user_tried_instructor = true WHERE id = $1
+`
+
+func (q *Queries) UpdateHasUserTriedInstructor(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, updateHasUserTriedInstructor, id)
+	return err
 }

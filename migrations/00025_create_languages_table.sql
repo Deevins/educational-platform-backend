@@ -1,10 +1,9 @@
 -- +goose NO TRANSACTION
 -- +goose Up
 
-CREATE TABLE human_resources.courses (
+CREATE TABLE human_resources.languages (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -12,4 +11,4 @@ CREATE TABLE human_resources.courses (
 
 -- +goose Down
 
-DROP TABLE IF EXISTS human_resources.courses;
+DROP TABLE IF EXISTS human_resources.languages;

@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.26.0
 
-package users_repo
+package directories
 
 import (
 	"database/sql/driver"

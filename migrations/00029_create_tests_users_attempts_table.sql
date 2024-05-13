@@ -1,10 +1,12 @@
 -- +goose NO TRANSACTION
 -- +goose Up
 
-CREATE TABLE human_resources.notifications (
+CREATE TABLE IF NOT EXISTS human_resources.tests_users_attempts (
     id SERIAL PRIMARY KEY,
+    test_id INT NOT NULL,
     user_id INT NOT NULL,
-    message TEXT NOT NULL,
+    attempt_number INT NOT NULL,
+    score INT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -12,4 +14,4 @@ CREATE TABLE human_resources.notifications (
 
 -- +goose Down
 
-DROP TABLE IF EXISTS human_resources.notifications;
+DROP TABLE if exists human_resources.tests_users_attempts;

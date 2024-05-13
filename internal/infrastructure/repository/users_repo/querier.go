@@ -10,9 +10,11 @@ import (
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg *CreateUserParams) (int32, error)
+	GetHasUserTriedInstructor(ctx context.Context, id int32) (*bool, error)
 	GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetUserByEmailAndHashedPasswordParams) (*HumanResourcesUser, error)
 	GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error)
 	GetUsers(ctx context.Context) ([]*HumanResourcesUser, error)
+	UpdateHasUserTriedInstructor(ctx context.Context, id int32) error
 }
 
 var _ Querier = (*Queries)(nil)

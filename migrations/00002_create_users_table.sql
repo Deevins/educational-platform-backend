@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
     full_name VARCHAR(255) NOT NULL,
     description TEXT,
     avatar_url VARCHAR(255) default '',
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
     password_hashed VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -16,5 +16,4 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
 
 
 -- +goose Down
-
 DROP TABLE human_resources.users;

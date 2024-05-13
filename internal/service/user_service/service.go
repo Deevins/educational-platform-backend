@@ -35,7 +35,12 @@ func NewService(repo users_repo.Querier) *Service {
 	}
 }
 
-func (s *Service) CreateUser(ctx context.Context, user model.UserCreate) (int32, error) {
+type RegisterUserResponse struct {
+	UserID int32  `json:"user_id"`
+	Token  string `json:"token"`
+}
+
+func (s *Service) CreateUser(ctx context.Context, user model.UserCreate) (RegisterUserResponse, error) {
 	user.Password = generatePasswordHash(user.Password)
 
 	userCreate := &users_repo.CreateUserParams{
@@ -47,7 +52,16 @@ func (s *Service) CreateUser(ctx context.Context, user model.UserCreate) (int32,
 	}
 
 	id, err := s.repo.CreateUser(ctx, userCreate)
-	return id, err
+	if err != nil {
+		return RegisterUserResponse{}, errors.Wrap(err, "failed to create user")
+	}
+
+	tkn, err := s.getUserByIDAndGenerateToken(ctx, id)
+
+	return RegisterUserResponse{
+		UserID: id,
+		Token:  tkn,
+	}, nil
 }
 
 func generatePasswordHash(password string) string {
@@ -56,14 +70,19 @@ func generatePasswordHash(password string) string {
 	return fmt.Sprintf("%x", hash.Sum(passwordSalt))
 }
 
-func (s *Service) generateToken(ctx context.Context, email, password string) (string, error) {
+type LoginUserResponse struct {
+	UserID int32  `json:"user_id"`
+	Token  string `json:"token"`
+}
+
+func (s *Service) GenerateToken(ctx context.Context, email, password string) (LoginUserResponse, error) {
 	user, err := s.repo.GetUserByEmailAndHashedPassword(ctx, &users_repo.GetUserByEmailAndHashedPasswordParams{
 		Email:          email,
 		PasswordHashed: generatePasswordHash(password),
 	})
 
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get user by email and password")
+		return LoginUserResponse{}, errors.Wrap(err, "failed to get user by email and password")
 	}
 
 	// token create new JWT token and sign it.
@@ -72,11 +91,17 @@ func (s *Service) generateToken(ctx context.Context, email, password string) (st
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-
 		UserID: user.ID,
 	})
+	jwtt, err := token.SignedString(jwtKey)
+	if err != nil {
+		return LoginUserResponse{}, errors.Wrap(err, "failed to sign token")
 
-	return token.SignedString(jwtKey)
+	}
+	return LoginUserResponse{
+		UserID: user.ID,
+		Token:  jwtt,
+	}, nil
 }
 
 func (s *Service) parseToken(accessToken string) (int32, error) {
@@ -97,5 +122,26 @@ func (s *Service) parseToken(accessToken string) (int32, error) {
 	}
 
 	return claims.UserID, nil
+
+}
+
+func (s *Service) getUserByIDAndGenerateToken(ctx context.Context, id int32) (string, error) {
+	user, err := s.repo.GetUserByID(ctx, id)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get user by id")
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaimsWithId{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+		UserID: user.ID,
+	})
+	jwtt, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to sign token")
+
+	}
+	return jwtt, nil
 
 }

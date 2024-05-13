@@ -7,7 +7,7 @@ type User struct {
 	Email                  string `json:"email"`
 	PasswordHashed         string `json:"password"`
 	AvatarURl              string `json:"avatar_url"`
-	HasUserTriesInstructor bool   `json:"has_user_tries_instructor"`
+	HasUserTriesInstructor bool   `json:"has_user_tried_instructor"`
 	PhoneNumber            string `json:"phone_number"`
 }
 
