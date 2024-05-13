@@ -61,6 +61,14 @@ func (db PostgresqlDatabase) ExecQueryRow(ctx context.Context, query string, arg
 	return db.cluster.QueryRow(ctx, query, args...)
 }
 
+func (db PostgresqlDatabase) Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error) {
+	return db.cluster.Query(ctx, query, args...)
+}
+
+func (db PostgresqlDatabase) QueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row {
+	return db.cluster.QueryRow(ctx, query, args...)
+}
+
 // NewPostgres func returns instance of PostgresSQL database client
 func NewPostgres(ctx context.Context, cfg config.Config) (*PostgresqlDatabase, error) {
 	dsn := generateDsn(cfg)

@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"github.com/deevins/educational-platform-backend/internal/config"
+	"github.com/deevins/educational-platform-backend/internal/handler"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
+	"github.com/deevins/educational-platform-backend/internal/servers"
+	"github.com/deevins/educational-platform-backend/internal/service/user_service"
 	dbclients "github.com/deevins/educational-platform-backend/pkg/db/clients"
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -31,47 +35,60 @@ func main() {
 		log.Fatalf("can not read config file %s", err.Error())
 	}
 
-	//db, err := dbclients.NewPostgres(ctx, config.Config{
-	//	Host:     os.Getenv("DB_HOST"),
-	//	Port:     os.Getenv("DB_PORT"),
-	//	User:     os.Getenv("DB_USER"),
-	//	Password: os.Getenv("DB_PASSWORD"),
-	//	Dbname:   os.Getenv("DB_DBNAME"),
-	//	SSLMode:  os.Getenv("DB_SSL"),
-	//}) // returned struct get interfaces
-	//if err != nil {
-	//	log.Fatalf("can not connect to db method clients.NewPgDB: %s", err)
-	//}
-
 	db, err := dbclients.NewPostgres(ctx, config.Config{
-		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("db.port"),
-		User:     viper.GetString("db.user"),
-		Password: viper.GetString("db.password"),
-		Dbname:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
-	}) // returned struct get interfaces
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Dbname:   os.Getenv("DB_DBNAME"),
+		SSLMode:  os.Getenv("DB_SSL"),
+	})
 	if err != nil {
-		log.Fatalf("can not connect to db method clients.NewPgDB: %s", err)
+		log.Fatalf("can not connect to db with err: %s", err)
 	}
 
+	repos := users_repo.New(db)
+	services := user_service.NewService(repos)
+	handlers := handler.NewHandler(services)
+
 	// Создаем новый экземпляр роутера Gin
-	router := gin.Default()
+	srv := new(servers.HTTPServer)
+	go func() {
+		if err := srv.Run(viper.GetString("http_server.port"), handlers.InitRoutes()); err != nil {
+			logrus.Fatalf("error occured while running http server %s", err.Error())
+		}
+	}()
 
-	// Определяем обработчик для GET запросов на путь "/"
-	router.GET("/api/v1/courses/", func(c *gin.Context) {
-		// Возвращаем текст "Hello, World!" с кодом состояния 200
-		c.String(http.StatusOK, "Hello, World!")
-	})
+	quit := make(chan os.Signal, 1)
 
-	// Запускаем сервер на порту 8080
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
-	if err = router.Run(":8080"); err != nil {
-		log.Fatalf("can not run server: %s", err.Error())
+	<-quit
+
+	logrus.Println("Application is shutting down...")
+
+	if err := srv.Shutdown(context.Background()); err != nil {
+		logrus.Errorf("Error on server while shutting down: [%s]", err)
 	}
 
 	defer db.GetPool(ctx).Close()
 
+	//grpcServerPort := viper.GetString("grpc_server.port")
+	//lsn, err := net.Listen("tcp", grpcServerPort)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//grpcServer := grpc.NewServer()
+	//
+	//pb.RegisterUserServiceV1Server(grpcServer, NewUserImplementation(userService))
+
+	//go func() {
+	//	log.Printf("gRPC server successfully started on port %s", lsn.Addr().String())
+	//	if err := grpcServer.Serve(lsn); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}()
 }
 
 func initConfig() error {
@@ -80,20 +97,4 @@ func initConfig() error {
 	viper.SetConfigName("config")
 
 	return viper.ReadInConfig()
-}
-
-func testFunc(ctx *gin.Context) {
-	var input users_repo.HumanResourcesUser
-	if err := ctx.BindJSON(&input); err != nil {
-		return
-	}
-
-	id, err := users_repo.GetUsers(ctx, input)
-	if err != nil {
-		return
-	}
-
-	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"id": id,
-	})
 }

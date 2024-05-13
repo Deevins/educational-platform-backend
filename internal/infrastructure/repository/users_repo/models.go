@@ -59,7 +59,7 @@ type HumanResourcesRoles string
 const (
 	HumanResourcesRolesAdmin     HumanResourcesRoles = "admin"
 	HumanResourcesRolesModerator HumanResourcesRoles = "moderator"
-	HumanResourcesRolesUser      HumanResourcesRoles = "user"
+	HumanResourcesRolesUsers     HumanResourcesRoles = "users"
 )
 
 func (e *HumanResourcesRoles) Scan(src interface{}) error {
@@ -130,6 +130,15 @@ type HumanResourcesForumThread struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
+type HumanResourcesForumThreadsMessage struct {
+	ID         int32
+	ThreadID   int32
+	Body       string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	UserSentID int32
+}
+
 type HumanResourcesLecture struct {
 	ID          int32
 	Title       string
@@ -162,10 +171,14 @@ type HumanResourcesTest struct {
 }
 
 type HumanResourcesUser struct {
-	ID        int32
-	Username  string
-	Email     string
-	Password  string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID                     int32
+	FullName               string
+	Description            *string
+	AvatarUrl              *string
+	Email                  string
+	PasswordHashed         string
+	CreatedAt              pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
+	HasUserTriedInstructor *bool
+	PhoneNumber            string
 }

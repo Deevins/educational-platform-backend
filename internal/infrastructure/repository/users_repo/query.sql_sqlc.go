@@ -9,25 +9,105 @@ import (
 	"context"
 )
 
-const getUsers = `-- name: GetUsers :many
-SELECT username, email from human_resources.users
+const createUser = `-- name: CreateUser :one
+INSERT INTO human_resources.users (full_name, email,description, password_hashed, phone_number) VALUES ($1, $2, $3, $4, $5) RETURNING id
 `
 
-type GetUsersRow struct {
-	Username string
-	Email    string
+type CreateUserParams struct {
+	FullName       string
+	Email          string
+	Description    *string
+	PasswordHashed string
+	PhoneNumber    string
 }
 
-func (q *Queries) GetUsers(ctx context.Context) ([]*GetUsersRow, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.FullName,
+		arg.Email,
+		arg.Description,
+		arg.PasswordHashed,
+		arg.PhoneNumber,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getUserByEmailAndHashedPassword = `-- name: GetUserByEmailAndHashedPassword :one
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE email = $1 AND password_hashed = $2
+`
+
+type GetUserByEmailAndHashedPasswordParams struct {
+	Email          string
+	PasswordHashed string
+}
+
+func (q *Queries) GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetUserByEmailAndHashedPasswordParams) (*HumanResourcesUser, error) {
+	row := q.db.QueryRow(ctx, getUserByEmailAndHashedPassword, arg.Email, arg.PasswordHashed)
+	var i HumanResourcesUser
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Description,
+		&i.AvatarUrl,
+		&i.Email,
+		&i.PasswordHashed,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.HasUserTriedInstructor,
+		&i.PhoneNumber,
+	)
+	return &i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE id = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i HumanResourcesUser
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Description,
+		&i.AvatarUrl,
+		&i.Email,
+		&i.PasswordHashed,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.HasUserTriedInstructor,
+		&i.PhoneNumber,
+	)
+	return &i, err
+}
+
+const getUsers = `-- name: GetUsers :many
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users
+`
+
+func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 	rows, err := q.db.Query(ctx, getUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*GetUsersRow
+	var items []*HumanResourcesUser
 	for rows.Next() {
-		var i GetUsersRow
-		if err := rows.Scan(&i.Username, &i.Email); err != nil {
+		var i HumanResourcesUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Description,
+			&i.AvatarUrl,
+			&i.Email,
+			&i.PasswordHashed,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.HasUserTriedInstructor,
+			&i.PhoneNumber,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

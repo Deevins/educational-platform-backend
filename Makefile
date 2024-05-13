@@ -1,5 +1,5 @@
 ifeq ($(POSTGRES_SETUP_STRING),)
-	POSTGRES_SETUP_STRING := user=postgres password=postgres dbname=pg host=localhost port=5432 sslmode=disable
+	POSTGRES_SETUP_STRING := user=Shili password=postgres dbname=pg host=localhost port=5432 sslmode=disable
 endif
 
 INTERNAL_PKG_PATH=$(CURDIR)/internal/pkg
@@ -44,9 +44,9 @@ unit-tests:
 
 .PHONY: proto
 proto:
-#	rm -rf ./internal/pb
-#	mkdir -p ./internal/pb
-	protoc ./api/*.proto/*.proto \
-               --go_out=./internal/pb \
-               --go-grpc_out=./internal/pb \
-               --proto_path=.
+	protoc -I ./api/ -I./api/google/api \
+        --go_out=./internal/pb --go_opt=paths=source_relative \
+        --go-grpc_out=./internal/pb --go-grpc_opt=paths=source_relative \
+        --grpc-gateway_out=./internal/pb --grpc-gateway_opt=paths=source_relative \
+        --openapiv2_out=./internal/pb --openapiv2_opt=logtostderr=true \
+        ./api/users/users.proto
