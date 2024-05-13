@@ -5,13 +5,16 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     description TEXT,
-    avatar_url VARCHAR(255) default '',
+    avatar bytea default '',
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hashed VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     has_user_tried_instructor BOOLEAN DEFAULT FALSE,
-    phone_number VARCHAR(255) NOT NULL
+    phone_number VARCHAR(255) NOT NULL,
+    linkedin VARCHAR(255),
+    github VARCHAR(255),
+    vk VARCHAR(255)
 );
 
 
