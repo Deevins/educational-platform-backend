@@ -328,7 +328,4 @@ type HumanResourcesUser struct {
 	UpdatedAt              pgtype.Timestamptz
 	HasUserTriedInstructor *bool
 	PhoneNumber            string
-	Linkedin               *string
-	Github                 *string
-	Vk                     *string
 }

@@ -9,6 +9,27 @@ import (
 	"context"
 )
 
+const addTeachingExperience = `-- name: AddTeachingExperience :exec
+INSERT INTO human_resources.instructors_info (user_id, has_video_knowledge, current_audience_count, has_previous_experience) VALUES ($1, $2, $3, $4)
+`
+
+type AddTeachingExperienceParams struct {
+	UserID                int32
+	HasVideoKnowledge     string
+	CurrentAudienceCount  string
+	HasPreviousExperience string
+}
+
+func (q *Queries) AddTeachingExperience(ctx context.Context, arg *AddTeachingExperienceParams) error {
+	_, err := q.db.Exec(ctx, addTeachingExperience,
+		arg.UserID,
+		arg.HasVideoKnowledge,
+		arg.CurrentAudienceCount,
+		arg.HasPreviousExperience,
+	)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO human_resources.users (full_name, email,description, password_hashed, phone_number) VALUES ($1, $2, $3, $4, $5) RETURNING id
 `
@@ -46,7 +67,7 @@ func (q *Queries) GetHasUserTriedInstructor(ctx context.Context, id int32) (*boo
 }
 
 const getUserByEmailAndHashedPassword = `-- name: GetUserByEmailAndHashedPassword :one
-SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users WHERE email = $1 AND password_hashed = $2
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE email = $1 AND password_hashed = $2
 `
 
 type GetUserByEmailAndHashedPasswordParams struct {
@@ -68,15 +89,12 @@ func (q *Queries) GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetU
 		&i.UpdatedAt,
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
-		&i.Linkedin,
-		&i.Github,
-		&i.Vk,
 	)
 	return &i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users WHERE id = $1
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error) {
@@ -93,15 +111,12 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUse
 		&i.UpdatedAt,
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
-		&i.Linkedin,
-		&i.Github,
-		&i.Vk,
 	)
 	return &i, err
 }
 
 const getUsers = `-- name: GetUsers :many
-SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
@@ -124,9 +139,6 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 			&i.UpdatedAt,
 			&i.HasUserTriedInstructor,
 			&i.PhoneNumber,
-			&i.Linkedin,
-			&i.Github,
-			&i.Vk,
 		); err != nil {
 			return nil, err
 		}
@@ -158,27 +170,6 @@ UPDATE human_resources.users SET has_user_tried_instructor = true WHERE id = $1
 
 func (q *Queries) UpdateHasUserTriedInstructor(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, updateHasUserTriedInstructor, id)
-	return err
-}
-
-const updateTeachingExperience = `-- name: UpdateTeachingExperience :exec
-UPDATE human_resources.instructors_info SET has_video_knowledge = $1, has_previous_experience = $2, current_audience_count = $3 WHERE user_id = $4
-`
-
-type UpdateTeachingExperienceParams struct {
-	HasVideoKnowledge     string
-	HasPreviousExperience string
-	CurrentAudienceCount  string
-	UserID                int32
-}
-
-func (q *Queries) UpdateTeachingExperience(ctx context.Context, arg *UpdateTeachingExperienceParams) error {
-	_, err := q.db.Exec(ctx, updateTeachingExperience,
-		arg.HasVideoKnowledge,
-		arg.HasPreviousExperience,
-		arg.CurrentAudienceCount,
-		arg.UserID,
-	)
 	return err
 }
 

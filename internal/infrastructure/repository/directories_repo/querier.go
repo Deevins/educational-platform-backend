@@ -10,7 +10,7 @@ import (
 
 type Querier interface {
 	GetCategoriesAndSubcategories(ctx context.Context) ([]*GetCategoriesAndSubcategoriesRow, error)
-	GetLanguages(ctx context.Context) ([]string, error)
+	GetLanguages(ctx context.Context) ([]*GetLanguagesRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

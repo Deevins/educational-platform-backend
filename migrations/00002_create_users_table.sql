@@ -11,10 +11,7 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     has_user_tried_instructor BOOLEAN DEFAULT FALSE,
-    phone_number VARCHAR(255) NOT NULL,
-    linkedin VARCHAR(255),
-    github VARCHAR(255),
-    vk VARCHAR(255)
+    phone_number VARCHAR(255) NOT NULL
 );
 
 

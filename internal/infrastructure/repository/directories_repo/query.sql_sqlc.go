@@ -10,16 +10,24 @@ import (
 )
 
 const getCategoriesAndSubcategories = `-- name: GetCategoriesAndSubcategories :many
- SELECT c.id as category_id, c.name as category_name, s.id as subcategory_id, s.name as subcategory_name FROM human_resources.categories c
-    JOIN human_resources.subcategories s ON c.id = s.category_id
- group by c.id, s.id
+SELECT
+    c.id AS category_id,
+    c.name AS category_name,
+    s.id AS subcategory_id,
+    s.name AS subcategory_name
+FROM
+    human_resources.categories c
+        LEFT JOIN
+    human_resources.subcategories s ON c.id = s.category_id
+ORDER BY
+    c.id, s.id
 `
 
 type GetCategoriesAndSubcategoriesRow struct {
 	CategoryID      int32
 	CategoryName    string
-	SubcategoryID   int32
-	SubcategoryName string
+	SubcategoryID   *int32
+	SubcategoryName *string
 }
 
 func (q *Queries) GetCategoriesAndSubcategories(ctx context.Context) ([]*GetCategoriesAndSubcategoriesRow, error) {
@@ -48,22 +56,27 @@ func (q *Queries) GetCategoriesAndSubcategories(ctx context.Context) ([]*GetCate
 }
 
 const getLanguages = `-- name: GetLanguages :many
-SELECT l.name from human_resources.languages l
+SELECT l.id, l.name from human_resources.languages l
 `
 
-func (q *Queries) GetLanguages(ctx context.Context) ([]string, error) {
+type GetLanguagesRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) GetLanguages(ctx context.Context) ([]*GetLanguagesRow, error) {
 	rows, err := q.db.Query(ctx, getLanguages)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []*GetLanguagesRow
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var i GetLanguagesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
-		items = append(items, name)
+		items = append(items, &i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

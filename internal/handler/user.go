@@ -8,24 +8,46 @@ import (
 	"net/http"
 )
 
+type GetOneUserInfoRequest struct {
+	ID int32 `json:"id"`
+}
+
 func (h *Handler) getOneUser(ctx *gin.Context) {
-	var input int32 // id
+	var input GetOneUserInfoRequest // id
 
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
+	user, err := h.us.GetByID(ctx, input.ID)
+	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"id":           user.ID,
+		"full_name":    user.FullName,
+		"description":  user.Description,
+		"email":        user.Email,
+		"avatar":       user.Avatar,
+		"phone_number": user.PhoneNumber,
+	})
+
+}
+
+type HasUserTriedInstructorRequest struct {
+	ID int32 `json:"id"`
 }
 
 func (h *Handler) hasUserTriedInstructor(ctx *gin.Context) {
-	var input int32 // id
+	var input HasUserTriedInstructorRequest // id
 
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	hasUsed, err := h.us.GetHasUserTriedInstructor(ctx, input)
+	hasUsed, err := h.us.GetHasUserTriedInstructor(ctx, input.ID)
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -35,30 +57,38 @@ func (h *Handler) hasUserTriedInstructor(ctx *gin.Context) {
 	})
 }
 
+type SetHasUserTriedInstructorToTrueRequest struct {
+	ID int32 `json:"id"`
+}
+
 func (h *Handler) setHasUserTriedInstructorToTrue(ctx *gin.Context) {
-	var input int32 // id
+	var input SetHasUserTriedInstructorToTrueRequest // id
 
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err := h.us.SetHasUserTriedInstructorToTrue(ctx, input)
+	err := h.us.SetHasUserTriedInstructorToTrue(ctx, input.ID)
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
+type GetSelfInfoRequest struct {
+	ID int32 `json:"id"`
+}
+
 func (h *Handler) getSelfInfo(ctx *gin.Context) {
-	var input int32 // id
+	var input GetSelfInfoRequest // id
 
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	user, err := h.us.GetSelfInfo(ctx, input)
+	user, err := h.us.GetSelfInfo(ctx, input.ID)
 	if err != nil {
 		return
 	}
@@ -70,15 +100,16 @@ func (h *Handler) getSelfInfo(ctx *gin.Context) {
 		"email":        user.Email,
 		"avatar":       user.Avatar,
 		"phone_number": user.PhoneNumber,
-		"linkedin":     user.Linkedin,
-		"vk":           user.VK,
-		"github":       user.Github,
 	})
 
 }
 
+type UpdateAvatarStruct struct {
+	ID int32 `json:"id"`
+}
+
 func (h *Handler) updateAvatar(ctx *gin.Context) {
-	var input int32 // id
+	var input UpdateAvatarStruct // id
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -104,7 +135,7 @@ func (h *Handler) updateAvatar(ctx *gin.Context) {
 		return
 	}
 
-	err = h.us.UpdateAvatar(ctx, input, fileBytes)
+	err = h.us.UpdateAvatar(ctx, input.ID, fileBytes)
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -121,8 +152,9 @@ func (h *Handler) updateUserTeachingExperience(ctx *gin.Context) {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
-	err := h.us.UpdateUserTeachingExperience(ctx, &input)
+	err := h.us.AddUserTeachingExperience(ctx, &input)
 	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 }

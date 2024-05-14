@@ -1,7 +1,15 @@
 -- name: GetCategoriesAndSubcategories :many
- SELECT c.id as category_id, c.name as category_name, s.id as subcategory_id, s.name as subcategory_name FROM human_resources.categories c
-    JOIN human_resources.subcategories s ON c.id = s.category_id
- group by c.id, s.id;
+SELECT
+    c.id AS category_id,
+    c.name AS category_name,
+    s.id AS subcategory_id,
+    s.name AS subcategory_name
+FROM
+    human_resources.categories c
+        LEFT JOIN
+    human_resources.subcategories s ON c.id = s.category_id
+ORDER BY
+    c.id, s.id;
 
 -- name: GetLanguages :many
-SELECT l.name from human_resources.languages l;
+SELECT l.id, l.name from human_resources.languages l;

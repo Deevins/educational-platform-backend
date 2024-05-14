@@ -4,9 +4,13 @@ import (
 	"context"
 	"github.com/deevins/educational-platform-backend/internal/config"
 	"github.com/deevins/educational-platform-backend/internal/handler"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses_repo"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/directories_repo"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
 	"github.com/deevins/educational-platform-backend/internal/servers"
 	"github.com/deevins/educational-platform-backend/internal/service/auth_service"
+	"github.com/deevins/educational-platform-backend/internal/service/directory_service"
+	"github.com/deevins/educational-platform-backend/internal/service/user_service"
 	dbclients "github.com/deevins/educational-platform-backend/pkg/db/clients"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -47,9 +51,14 @@ func main() {
 		log.Fatalf("can not connect to db with err: %s", err)
 	}
 
-	repos := users_repo.New(db)
-	services := auth_service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	userRepo := users_repo.New(db)
+	courseRepo := courses_repo.New(db)
+	directoryRepo := directories_repo.New(db)
+	authSvc := auth_service.NewService(userRepo)
+	userSvc := user_service.NewService(userRepo)
+	directorySvc := directory_service.NewService(directoryRepo)
+
+	handlers := handler.NewHandler(authSvc, userSvc, courseRepo, nil, directorySvc)
 
 	// Создаем новый экземпляр роутера Gin
 	srv := new(servers.HTTPServer)

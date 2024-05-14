@@ -18,7 +18,7 @@ type UserService interface {
 	SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error
 	GetSelfInfo(ctx context.Context, ID int32) (*model.User, error)
 	UpdateAvatar(ctx context.Context, ID int32, avatar []byte) error
-	UpdateUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
+	AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
 	UpdateUserInfo(ctx context.Context, user model.UserUpdate) error
 }
 
@@ -27,7 +27,8 @@ type CourseService interface{}
 type ThreadService interface{}
 
 type DirectoryService interface {
-	GetCategoriesWithSubCategories(ctx context.Context) ([]model.Category, error)
+	GetCategoriesWithSubCategories(ctx context.Context) ([]*model.Category, error)
+	GetLanguages(ctx context.Context) ([]*model.Language, error)
 }
 
 type Handler struct {
@@ -60,11 +61,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		user.GET("/get-one", h.getOneUser)
 		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)
-		user.PUT("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue)
+		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // dunno
 		user.GET("/get-self-info", h.getSelfInfo)
 		user.PUT("/update-avatar", h.updateAvatar)
-		user.PUT("/update-user-teaching-experience", h.updateUserTeachingExperience)
-		user.PUT("/update-user-info", h.updateUserInfo)
+		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience) //
+		user.PUT("/update-user-info", h.updateUserInfo)                            // dunno
 	}
 	course := router.Group("/course")
 	{
@@ -92,6 +93,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	directories := router.Group("/directories")
 	{
 		directories.GET("/categories", h.getCategories)
+		directories.GET("/languages", h.getLanguages)
 		//directories.GET("/filter-by-category-and-subcategory", h.filterByCategoryAndSubcategory)
 	}
 

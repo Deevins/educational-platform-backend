@@ -53,9 +53,6 @@ func (s *Service) GetByID(ctx context.Context, ID int32) (*model.User, error) {
 		Email:       user.Email,
 		Avatar:      user.Avatar,
 		PhoneNumber: user.PhoneNumber,
-		Linkedin:    lo.FromPtrOr(user.Linkedin, ""),
-		VK:          lo.FromPtrOr(user.Vk, ""),
-		Github:      lo.FromPtrOr(user.Github, ""),
 	}, nil
 
 }
@@ -81,8 +78,8 @@ func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar []byte) err
 	return nil
 }
 
-func (s *Service) UpdateUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {
-	err := s.repo.UpdateTeachingExperience(ctx, &users_repo.UpdateTeachingExperienceParams{
+func (s *Service) AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {
+	err := s.repo.AddTeachingExperience(ctx, &users_repo.AddTeachingExperienceParams{
 		HasVideoKnowledge:     exp.HasVideoKnowledge,
 		HasPreviousExperience: exp.HasPreviousExperience,
 		CurrentAudienceCount:  exp.CurrentAudienceCount,
@@ -123,8 +120,5 @@ func (s *Service) GetSelfInfo(ctx context.Context, ID int32) (*model.User, error
 		Email:       user.Email,
 		Avatar:      user.Avatar,
 		PhoneNumber: user.PhoneNumber,
-		Linkedin:    lo.FromPtrOr(user.Linkedin, ""),
-		VK:          lo.FromPtrOr(user.Vk, ""),
-		Github:      lo.FromPtrOr(user.Github, ""),
 	}, nil
 }

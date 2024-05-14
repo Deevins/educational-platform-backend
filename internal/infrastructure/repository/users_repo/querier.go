@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AddTeachingExperience(ctx context.Context, arg *AddTeachingExperienceParams) error
 	CreateUser(ctx context.Context, arg *CreateUserParams) (int32, error)
 	GetHasUserTriedInstructor(ctx context.Context, id int32) (*bool, error)
 	GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetUserByEmailAndHashedPasswordParams) (*HumanResourcesUser, error)
@@ -16,7 +17,6 @@ type Querier interface {
 	GetUsers(ctx context.Context) ([]*HumanResourcesUser, error)
 	UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) error
 	UpdateHasUserTriedInstructor(ctx context.Context, id int32) error
-	UpdateTeachingExperience(ctx context.Context, arg *UpdateTeachingExperienceParams) error
 	UpdateUser(ctx context.Context, arg *UpdateUserParams) error
 }
 
