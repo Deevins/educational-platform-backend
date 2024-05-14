@@ -20,3 +20,14 @@ services:
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+  minio:
+    image: minio/minio
+    restart: always
+    container_name: minio
+    environment:
+      MINIO_ACCESS_KEY: 'access_key'
+      MINIO_SECRET_KEY: 'secret_key'
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server --console-address ":9001" /data

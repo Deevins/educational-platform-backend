@@ -6,7 +6,7 @@ import (
 	"github.com/deevins/educational-platform-backend/internal/handler"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
 	"github.com/deevins/educational-platform-backend/internal/servers"
-	"github.com/deevins/educational-platform-backend/internal/service/user_service"
+	"github.com/deevins/educational-platform-backend/internal/service/auth_service"
 	dbclients "github.com/deevins/educational-platform-backend/pkg/db/clients"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	repos := users_repo.New(db)
-	services := user_service.NewService(repos)
+	services := auth_service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
 	// Создаем новый экземпляр роутера Gin

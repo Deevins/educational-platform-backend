@@ -3,27 +3,31 @@ package handler
 import (
 	"context"
 	"github.com/deevins/educational-platform-backend/internal/model"
-	"github.com/deevins/educational-platform-backend/internal/service/user_service"
+	"github.com/deevins/educational-platform-backend/internal/service/auth_service"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type AuthService interface {
-	CreateUser(ctx context.Context, user model.UserCreate) (user_service.RegisterUserResponse, error)
-	GenerateToken(ctx context.Context, email, password string) (user_service.LoginUserResponse, error)
+	CreateUser(ctx context.Context, user model.UserCreate) (auth_service.RegisterUserResponse, error)
+	GenerateToken(ctx context.Context, email, password string) (auth_service.LoginUserResponse, error)
 }
 
 type UserService interface {
 	GetByID(ctx context.Context, ID int32) (*model.User, error)
+	GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool, error)
+	SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error
+	GetSelfInfo(ctx context.Context, ID int32) (*model.User, error)
+	UpdateAvatar(ctx context.Context, ID int32, avatar []byte) error
+	UpdateUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
+	UpdateUserInfo(ctx context.Context, user model.UserUpdate) error
 }
 
-type CourseService interface {
-}
+type CourseService interface{}
 
-type ThreadService interface {
-}
+type ThreadService interface{}
 
 type DirectoryService interface {
+	GetCategoriesWithSubCategories(ctx context.Context) ([]model.Category, error)
 }
 
 type Handler struct {
@@ -55,22 +59,24 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	user := router.Group("/user")
 	{
 		user.GET("/get-one", h.getOneUser)
-		user.GET("has-user-tries-instructor", h.hasUserTriesInstructor)
+		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)
+		user.PUT("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue)
 		user.GET("/get-self-info", h.getSelfInfo)
 		user.PUT("/update-avatar", h.updateAvatar)
 		user.PUT("/update-user-teaching-experience", h.updateUserTeachingExperience)
-
+		user.PUT("/update-user-info", h.updateUserInfo)
 	}
 	course := router.Group("/course")
 	{
 		course.GET("/get-one", h.getOneCourse)
-		course.GET("/get-all", h.getAllCourses) // add check for course status
+		course.GET("/get-courses-by-user-id", h.getAllCoursesByUserID) // для вывода курсов по id пользователя у него на странице или еще где
+		course.GET("/get-all", h.getAllCourses)                        // add check for course status
 		course.GET("/get-last-eight", h.getLastEightCourses)
 		course.POST("/create-base", h.createCourseBase)
 		course.PUT("/update", h.updateCourse)
 		course.DELETE("/delete", h.deleteCourse)
 		course.GET("/search-courses-by-title", h.searchCoursesByTitle)
-		course.GET("/get-all-courses-by-instructor-id", h.getAllCoursesByInstructorID)
+		course.GET("/get-all-courses-by-instructor-id", h.getAllCoursesByInstructorID) // для вывода курсов по id инструктора которые он создал
 		course.PUT("/update-course-goals", h.updateCourseGoals)
 		course.PUT("/update-course-curriculum", h.updateCourseCurriculum)
 		course.PUT("/update/course/basics", h.updateCourseBasics)
@@ -86,8 +92,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	directories := router.Group("/directories")
 	{
 		directories.GET("/categories", h.getCategories)
-		directories.GET("/filter-by-category-and-subcategory", h.filterByCategoryAndSubcategory)
-
+		//directories.GET("/filter-by-category-and-subcategory", h.filterByCategoryAndSubcategory)
 	}
 
 	threads := router.Group("/threads")
@@ -97,18 +102,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		threads.POST("/answer-in-thread", h.answerInThread)
 		threads.GET("/search-threads-by-title", h.searchThreadsByTitle)
 		threads.GET("/get-one-thread", h.getOneThread) // here we must get all threads messages
+		threads.POST("/add-tag-to-thread", h.addTagToThread)
 	}
 
 	return router
-}
-
-func (h *Handler) getOneUser(ctx *gin.Context) {
-	var input int32 // id
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
 }
 
 func corsMiddleware() gin.HandlerFunc {

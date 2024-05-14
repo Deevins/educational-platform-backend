@@ -46,7 +46,7 @@ func (q *Queries) GetHasUserTriedInstructor(ctx context.Context, id int32) (*boo
 }
 
 const getUserByEmailAndHashedPassword = `-- name: GetUserByEmailAndHashedPassword :one
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE email = $1 AND password_hashed = $2
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users WHERE email = $1 AND password_hashed = $2
 `
 
 type GetUserByEmailAndHashedPasswordParams struct {
@@ -61,19 +61,22 @@ func (q *Queries) GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetU
 		&i.ID,
 		&i.FullName,
 		&i.Description,
-		&i.AvatarUrl,
+		&i.Avatar,
 		&i.Email,
 		&i.PasswordHashed,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
+		&i.Linkedin,
+		&i.Github,
+		&i.Vk,
 	)
 	return &i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users WHERE id = $1
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error) {
@@ -83,19 +86,22 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUse
 		&i.ID,
 		&i.FullName,
 		&i.Description,
-		&i.AvatarUrl,
+		&i.Avatar,
 		&i.Email,
 		&i.PasswordHashed,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
+		&i.Linkedin,
+		&i.Github,
+		&i.Vk,
 	)
 	return &i, err
 }
 
 const getUsers = `-- name: GetUsers :many
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number from human_resources.users
+SELECT id, full_name, description, avatar, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, linkedin, github, vk from human_resources.users
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
@@ -111,13 +117,16 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 			&i.ID,
 			&i.FullName,
 			&i.Description,
-			&i.AvatarUrl,
+			&i.Avatar,
 			&i.Email,
 			&i.PasswordHashed,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.HasUserTriedInstructor,
 			&i.PhoneNumber,
+			&i.Linkedin,
+			&i.Github,
+			&i.Vk,
 		); err != nil {
 			return nil, err
 		}
@@ -129,11 +138,69 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 	return items, nil
 }
 
+const updateAvatar = `-- name: UpdateAvatar :exec
+UPDATE human_resources.users SET avatar = $1 WHERE id = $2
+`
+
+type UpdateAvatarParams struct {
+	Avatar []byte
+	ID     int32
+}
+
+func (q *Queries) UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) error {
+	_, err := q.db.Exec(ctx, updateAvatar, arg.Avatar, arg.ID)
+	return err
+}
+
 const updateHasUserTriedInstructor = `-- name: UpdateHasUserTriedInstructor :exec
 UPDATE human_resources.users SET has_user_tried_instructor = true WHERE id = $1
 `
 
 func (q *Queries) UpdateHasUserTriedInstructor(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, updateHasUserTriedInstructor, id)
+	return err
+}
+
+const updateTeachingExperience = `-- name: UpdateTeachingExperience :exec
+UPDATE human_resources.instructors_info SET has_video_knowledge = $1, has_previous_experience = $2, current_audience_count = $3 WHERE user_id = $4
+`
+
+type UpdateTeachingExperienceParams struct {
+	HasVideoKnowledge     string
+	HasPreviousExperience string
+	CurrentAudienceCount  string
+	UserID                int32
+}
+
+func (q *Queries) UpdateTeachingExperience(ctx context.Context, arg *UpdateTeachingExperienceParams) error {
+	_, err := q.db.Exec(ctx, updateTeachingExperience,
+		arg.HasVideoKnowledge,
+		arg.HasPreviousExperience,
+		arg.CurrentAudienceCount,
+		arg.UserID,
+	)
+	return err
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE human_resources.users SET full_name = $1, email = $2, description = $3, phone_number = $4 WHERE id = $5
+`
+
+type UpdateUserParams struct {
+	FullName    string
+	Email       string
+	Description *string
+	PhoneNumber string
+	ID          int32
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg *UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser,
+		arg.FullName,
+		arg.Email,
+		arg.Description,
+		arg.PhoneNumber,
+		arg.ID,
+	)
 	return err
 }

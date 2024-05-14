@@ -14,7 +14,10 @@ type Querier interface {
 	GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetUserByEmailAndHashedPasswordParams) (*HumanResourcesUser, error)
 	GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error)
 	GetUsers(ctx context.Context) ([]*HumanResourcesUser, error)
+	UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) error
 	UpdateHasUserTriedInstructor(ctx context.Context, id int32) error
+	UpdateTeachingExperience(ctx context.Context, arg *UpdateTeachingExperienceParams) error
+	UpdateUser(ctx context.Context, arg *UpdateUserParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -2,28 +2,14 @@ package user_service
 
 import (
 	"context"
-	"crypto/sha1"
-	"fmt"
+	"github.com/deevins/educational-platform-backend/internal/handler"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
 	"github.com/deevins/educational-platform-backend/internal/model"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
-	"os"
-	"time"
+	"github.com/samber/lo"
 )
 
-const (
-	tokenTTL = 12 * time.Hour
-)
-
-var jwtKey = []byte(os.Getenv("SIGNING_KEY"))
-var passwordSalt = []byte(os.Getenv("SALT"))
-
-// TokenClaimsWithId Structure of token with user id
-type TokenClaimsWithId struct {
-	jwt.RegisteredClaims
-	UserID int32 `json:"user_id"`
-}
+var _ handler.UserService = &Service{}
 
 type Service struct {
 	repo users_repo.Querier
@@ -35,113 +21,110 @@ func NewService(repo users_repo.Querier) *Service {
 	}
 }
 
-type RegisterUserResponse struct {
-	UserID int32  `json:"user_id"`
-	Token  string `json:"token"`
-}
-
-func (s *Service) CreateUser(ctx context.Context, user model.UserCreate) (RegisterUserResponse, error) {
-	user.Password = generatePasswordHash(user.Password)
-
-	userCreate := &users_repo.CreateUserParams{
-		FullName:       user.FullName,
-		Email:          user.Email,
-		Description:    &user.Description,
-		PasswordHashed: user.Password,
-		PhoneNumber:    user.PhoneNumber,
-	}
-
-	id, err := s.repo.CreateUser(ctx, userCreate)
+func (s *Service) SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error {
+	hasUsed, err := s.repo.GetHasUserTriedInstructor(ctx, ID)
 	if err != nil {
-		return RegisterUserResponse{}, errors.Wrap(err, "failed to create user")
+		return errors.Wrap(err, "failed to get has user tried instructor")
 	}
 
-	tkn, err := s.getUserByIDAndGenerateToken(ctx, id)
-
-	return RegisterUserResponse{
-		UserID: id,
-		Token:  tkn,
-	}, nil
-}
-
-func generatePasswordHash(password string) string {
-	hash := sha1.New()
-	hash.Write([]byte(password))
-	return fmt.Sprintf("%x", hash.Sum(passwordSalt))
-}
-
-type LoginUserResponse struct {
-	UserID int32  `json:"user_id"`
-	Token  string `json:"token"`
-}
-
-func (s *Service) GenerateToken(ctx context.Context, email, password string) (LoginUserResponse, error) {
-	user, err := s.repo.GetUserByEmailAndHashedPassword(ctx, &users_repo.GetUserByEmailAndHashedPasswordParams{
-		Email:          email,
-		PasswordHashed: generatePasswordHash(password),
-	})
-
-	if err != nil {
-		return LoginUserResponse{}, errors.Wrap(err, "failed to get user by email and password")
-	}
-
-	// token create new JWT token and sign it.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaimsWithId{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		UserID: user.ID,
-	})
-	jwtt, err := token.SignedString(jwtKey)
-	if err != nil {
-		return LoginUserResponse{}, errors.Wrap(err, "failed to sign token")
-
-	}
-	return LoginUserResponse{
-		UserID: user.ID,
-		Token:  jwtt,
-	}, nil
-}
-
-func (s *Service) parseToken(accessToken string) (int32, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &TokenClaimsWithId{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
+	if hasUsed != nil && !*hasUsed {
+		err = s.repo.UpdateHasUserTriedInstructor(ctx, ID)
+		if err != nil {
+			return errors.Wrap(err, "failed to update has user tried instructor")
 		}
-		return jwtKey, nil
-	})
+
+		return nil
+	}
+
+	return nil
+}
+
+func (s *Service) GetByID(ctx context.Context, ID int32) (*model.User, error) {
+	user, err := s.repo.GetUserByID(ctx, ID)
 	if err != nil {
-		return 0, err
+		return nil, errors.Wrap(err, "failed to get user by id")
+
 	}
 
-	claims, ok := token.Claims.(*TokenClaimsWithId)
-
-	if !ok {
-		return 0, errors.New("token claims are not of type *TokenClaimsWithId")
-	}
-
-	return claims.UserID, nil
+	return &model.User{
+		ID:          user.ID,
+		FullName:    user.FullName,
+		Description: lo.FromPtrOr(user.Description, ""),
+		Email:       user.Email,
+		Avatar:      user.Avatar,
+		PhoneNumber: user.PhoneNumber,
+		Linkedin:    lo.FromPtrOr(user.Linkedin, ""),
+		VK:          lo.FromPtrOr(user.Vk, ""),
+		Github:      lo.FromPtrOr(user.Github, ""),
+	}, nil
 
 }
 
-func (s *Service) getUserByIDAndGenerateToken(ctx context.Context, id int32) (string, error) {
-	user, err := s.repo.GetUserByID(ctx, id)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get user by id")
+func (s *Service) GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool, error) {
+	hasUsed, err := s.repo.GetHasUserTriedInstructor(ctx, ID)
+	if err != nil && hasUsed == nil {
+		return false, errors.Wrap(err, "failed to get has user tried instructor")
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaimsWithId{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		UserID: user.ID,
+
+	return *hasUsed, nil
+}
+
+func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar []byte) error {
+	err := s.repo.UpdateAvatar(ctx, &users_repo.UpdateAvatarParams{
+		Avatar: avatar,
+		ID:     ID,
 	})
-	jwtt, err := token.SignedString(jwtKey)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to sign token")
-
+		return errors.Wrap(err, "failed to update avatar")
 	}
-	return jwtt, nil
 
+	return nil
+}
+
+func (s *Service) UpdateUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {
+	err := s.repo.UpdateTeachingExperience(ctx, &users_repo.UpdateTeachingExperienceParams{
+		HasVideoKnowledge:     exp.HasVideoKnowledge,
+		HasPreviousExperience: exp.HasPreviousExperience,
+		CurrentAudienceCount:  exp.CurrentAudienceCount,
+		UserID:                exp.UserID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to update user teaching experience")
+	}
+
+	return nil
+}
+
+func (s *Service) UpdateUserInfo(ctx context.Context, user model.UserUpdate) error {
+	err := s.repo.UpdateUser(ctx, &users_repo.UpdateUserParams{
+		FullName:    user.FullName,
+		Email:       user.Email,
+		Description: &user.Description,
+		PhoneNumber: user.PhoneNumber,
+		ID:          user.UserID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to update user")
+	}
+
+	return nil
+}
+
+func (s *Service) GetSelfInfo(ctx context.Context, ID int32) (*model.User, error) {
+	user, err := s.repo.GetUserByID(ctx, ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get user by id")
+	}
+
+	return &model.User{
+		ID:          user.ID,
+		FullName:    user.FullName,
+		Description: lo.FromPtrOr(user.Description, ""),
+		Email:       user.Email,
+		Avatar:      user.Avatar,
+		PhoneNumber: user.PhoneNumber,
+		Linkedin:    lo.FromPtrOr(user.Linkedin, ""),
+		VK:          lo.FromPtrOr(user.Vk, ""),
+		Github:      lo.FromPtrOr(user.Github, ""),
+	}, nil
 }

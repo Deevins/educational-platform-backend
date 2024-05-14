@@ -12,6 +12,7 @@ type Querier interface {
 	AddCourseBasicInfo(ctx context.Context, arg *AddCourseBasicInfoParams) error
 	AddCourseGoals(ctx context.Context, arg *AddCourseGoalsParams) error
 	CreateCourseBase(ctx context.Context, arg *CreateCourseBaseParams) error
+	GetEightCoursesShort(ctx context.Context) ([]*GetEightCoursesShortRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

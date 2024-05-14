@@ -60,12 +60,13 @@ func (q *Queries) AddCourseGoals(ctx context.Context, arg *AddCourseGoalsParams)
 }
 
 const createCourseBase = `-- name: CreateCourseBase :exec
-INSERT INTO human_resources.courses (title,type, category_id, time_planned, description, created_at, updated_at) VALUES ($1, $2, $3, $4,$5, now(), now()) RETURNING id
+INSERT INTO human_resources.courses (title,type,author_id, category_id, time_planned, description, created_at, updated_at) VALUES ($1, $2, $3, $4,$5, $6, now(), now()) RETURNING id
 `
 
 type CreateCourseBaseParams struct {
 	Title       string
 	Type        NullHumanResourcesCourseTypes
+	AuthorID    int32
 	CategoryID  *int32
 	TimePlanned *string
 	Description string
@@ -75,9 +76,42 @@ func (q *Queries) CreateCourseBase(ctx context.Context, arg *CreateCourseBasePar
 	_, err := q.db.Exec(ctx, createCourseBase,
 		arg.Title,
 		arg.Type,
+		arg.AuthorID,
 		arg.CategoryID,
 		arg.TimePlanned,
 		arg.Description,
 	)
 	return err
+}
+
+const getEightCoursesShort = `-- name: GetEightCoursesShort :many
+SELECT id,
+       title,
+       description FROM human_resources.courses WHERE status != 'DRAFT' AND status != 'PENDING' ORDER BY created_at DESC LIMIT 8
+`
+
+type GetEightCoursesShortRow struct {
+	ID          int32
+	Title       string
+	Description string
+}
+
+func (q *Queries) GetEightCoursesShort(ctx context.Context) ([]*GetEightCoursesShortRow, error) {
+	rows, err := q.db.Query(ctx, getEightCoursesShort)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetEightCoursesShortRow
+	for rows.Next() {
+		var i GetEightCoursesShortRow
+		if err := rows.Scan(&i.ID, &i.Title, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

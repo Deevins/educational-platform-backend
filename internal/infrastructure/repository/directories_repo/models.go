@@ -240,6 +240,15 @@ type HumanResourcesLanguage struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
+type HumanResourcesLastCourseItemsVisitedByUser struct {
+	ID         int32
+	CourseID   int32
+	UserID     int32
+	LastItemID int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
 type HumanResourcesLecture struct {
 	ID          int32
 	Title       string
@@ -297,15 +306,29 @@ type HumanResourcesTestsUsersAttempt struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type HumanResourcesThreadsTag struct {
+	ID   int32
+	Name string
+}
+
+type HumanResourcesThreadsTagsLink struct {
+	ID       int32
+	ThreadID int32
+	TagID    int32
+}
+
 type HumanResourcesUser struct {
 	ID                     int32
 	FullName               string
 	Description            *string
-	AvatarUrl              *string
+	Avatar                 []byte
 	Email                  string
 	PasswordHashed         string
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
 	HasUserTriedInstructor *bool
 	PhoneNumber            string
+	Linkedin               *string
+	Github                 *string
+	Vk                     *string
 }
