@@ -64,8 +64,8 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // dunno
 		user.GET("/get-self-info", h.getSelfInfo)
 		user.PUT("/update-avatar", h.updateAvatar)
-		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience) //
-		user.PUT("/update-user-info", h.updateUserInfo)                            // dunno
+		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)
+		user.PUT("/update-user-info", h.updateUserInfo) // dunno
 	}
 	course := router.Group("/course")
 	{
