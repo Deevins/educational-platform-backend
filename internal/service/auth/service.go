@@ -1,10 +1,10 @@
-package auth_service
+package auth
 
 import (
 	"context"
 	"crypto/sha1"
 	"fmt"
-	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users"
 	"github.com/deevins/educational-platform-backend/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
@@ -26,10 +26,10 @@ type TokenClaimsWithId struct {
 }
 
 type Service struct {
-	repo users_repo.Querier
+	repo users.Querier
 }
 
-func NewService(repo users_repo.Querier) *Service {
+func NewService(repo users.Querier) *Service {
 	return &Service{
 		repo: repo,
 	}
@@ -43,7 +43,7 @@ type RegisterUserResponse struct {
 func (s *Service) CreateUser(ctx context.Context, user model.UserCreate) (RegisterUserResponse, error) {
 	user.Password = generatePasswordHash(user.Password)
 
-	userCreate := &users_repo.CreateUserParams{
+	userCreate := &users.CreateUserParams{
 		FullName:       user.FullName,
 		Email:          user.Email,
 		Description:    &user.Description,
@@ -75,8 +75,8 @@ type LoginUserResponse struct {
 	Token  string `json:"token"`
 }
 
-func (s *Service) GenerateToken(ctx context.Context, email, password string) (LoginUserResponse, error) {
-	user, err := s.repo.GetUserByEmailAndHashedPassword(ctx, &users_repo.GetUserByEmailAndHashedPasswordParams{
+func (s *Service) Authorize(ctx context.Context, email, password string) (LoginUserResponse, error) {
+	user, err := s.repo.GetUserByEmailAndHashedPassword(ctx, &users.GetUserByEmailAndHashedPasswordParams{
 		Email:          email,
 		PasswordHashed: generatePasswordHash(password),
 	})

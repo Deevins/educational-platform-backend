@@ -1,9 +1,10 @@
 -- +goose NO TRANSACTION
 -- +goose Up
 
-CREATE TABLE IF NOT EXISTS human_resources.tests (
+CREATE TABLE human_resources.forum_threads (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    user_id INT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -11,4 +12,4 @@ CREATE TABLE IF NOT EXISTS human_resources.tests (
 
 -- +goose Down
 
-DROP TABLE IF EXISTS human_resources.tests;
+DROP TABLE IF EXISTS human_resources.forum_threads;

@@ -4,13 +4,15 @@ import (
 	"context"
 	"github.com/deevins/educational-platform-backend/internal/config"
 	"github.com/deevins/educational-platform-backend/internal/handler"
-	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses_repo"
-	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/directories_repo"
-	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users_repo"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/directories"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users"
 	"github.com/deevins/educational-platform-backend/internal/servers"
-	"github.com/deevins/educational-platform-backend/internal/service/auth_service"
-	"github.com/deevins/educational-platform-backend/internal/service/directory_service"
-	"github.com/deevins/educational-platform-backend/internal/service/user_service"
+	"github.com/deevins/educational-platform-backend/internal/service/auth"
+	"github.com/deevins/educational-platform-backend/internal/service/course"
+	"github.com/deevins/educational-platform-backend/internal/service/directory"
+	"github.com/deevins/educational-platform-backend/internal/service/user"
 	dbclients "github.com/deevins/educational-platform-backend/pkg/db/clients"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -51,16 +53,23 @@ func main() {
 		log.Fatalf("can not connect to db with err: %s", err)
 	}
 
-	userRepo := users_repo.New(db)
-	courseRepo := courses_repo.New(db)
-	directoryRepo := directories_repo.New(db)
-	authSvc := auth_service.NewService(userRepo)
-	userSvc := user_service.NewService(userRepo)
-	directorySvc := directory_service.NewService(directoryRepo)
+	// Инициализация соединения с Minio
+	minioClient := S3.NewMinioClient()
+	err = minioClient.InitMinio()
+	if err != nil {
+		log.Fatalf("Ошибка инициализации Minio: %v", err)
+	}
 
-	handlers := handler.NewHandler(authSvc, userSvc, courseRepo, nil, directorySvc)
+	userRepo := users.New(db)
+	courseRepo := courses.New(db)
+	directoryRepo := directories.New(db)
+	authSvc := auth.NewService(userRepo)
+	userSvc := user.NewService(userRepo, minioClient)
+	courseSvc := course.NewService(courseRepo, minioClient)
+	directorySvc := directory.NewService(directoryRepo)
 
-	// Создаем новый экземпляр роутера Gin
+	handlers := handler.NewHandler(authSvc, userSvc, courseSvc, nil, directorySvc)
+
 	srv := new(servers.HTTPServer)
 	go func() {
 		if err := srv.Run(viper.GetString("http_server.port"), handlers.InitRoutes()); err != nil {

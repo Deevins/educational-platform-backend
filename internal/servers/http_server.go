@@ -11,6 +11,10 @@ type HTTPServer struct {
 }
 
 func (s *HTTPServer) Run(port string, handler http.Handler) error {
+	if port == "" {
+		port = "8080"
+	}
+
 	s.httpServer = &http.Server{
 		Addr:           ":" + port,
 		Handler:        handler,

@@ -2,14 +2,15 @@ package handler
 
 import (
 	"context"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
-	"github.com/deevins/educational-platform-backend/internal/service/auth_service"
+	"github.com/deevins/educational-platform-backend/internal/service/auth"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthService interface {
-	CreateUser(ctx context.Context, user model.UserCreate) (auth_service.RegisterUserResponse, error)
-	GenerateToken(ctx context.Context, email, password string) (auth_service.LoginUserResponse, error)
+	CreateUser(ctx context.Context, user model.UserCreate) (auth.RegisterUserResponse, error)
+	Authorize(ctx context.Context, email, password string) (auth.LoginUserResponse, error)
 }
 
 type UserService interface {
@@ -17,12 +18,11 @@ type UserService interface {
 	GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool, error)
 	SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error
 	GetSelfInfo(ctx context.Context, ID int32) (*model.User, error)
-	UpdateAvatar(ctx context.Context, ID int32, avatar []byte) error
+	UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) error
 	AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
-	UpdateUserInfo(ctx context.Context, user model.UserUpdate) error
+	UpdateUserInfo(ctx context.Context, user *model.UserUpdate) error
+	GetUserAvatarByFileID(ctx context.Context, fileID string) (*model.UserIDWithResourceLink, error)
 }
-
-type CourseService interface{}
 
 type ThreadService interface{}
 
@@ -51,31 +51,30 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 	router.Use(corsMiddleware())
 
-	auth := router.Group("/auth")
+	authGroup := router.Group("/auth")
 	{
-		auth.POST("/sign-up", h.signUp)
-		auth.POST("/sign-in", h.signIn)
+		authGroup.POST("/sign-up", h.signUp) // ok
+		authGroup.POST("/sign-in", h.signIn) // ok
 	}
 
-	user := router.Group("/user")
+	user := router.Group("/users")
 	{
 		user.GET("/get-one", h.getOneUser)
-		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)
-		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // dunno
-		user.GET("/get-self-info", h.getSelfInfo)
-		user.PUT("/update-avatar", h.updateAvatar)
-		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)
-		user.PUT("/update-user-info", h.updateUserInfo) // dunno
+		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)                       // ok
+		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // ok
+		user.PUT("/update-avatar", h.updateAvatar)                                             // poxyi pokA
+		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)             // ok
+		user.PUT("/update-user-info", h.updateUserInfo)                                        // ok
 	}
-	course := router.Group("/course")
+	course := router.Group("/courses")
 	{
-		course.GET("/get-one", h.getOneCourse)
-		course.GET("/get-courses-by-user-id", h.getAllCoursesByUserID) // для вывода курсов по id пользователя у него на странице или еще где
-		course.GET("/get-all", h.getAllCourses)                        // add check for course status
-		course.GET("/get-last-eight", h.getLastEightCourses)
-		course.POST("/create-base", h.createCourseBase)
-		course.PUT("/update", h.updateCourse)
-		course.DELETE("/delete", h.deleteCourse)
+		course.GET("/get-one/:courseID", h.getOneCourse)                    // temp OK
+		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID) // для вывода курсов по id пользователя у него на странице или еще где ok
+		course.GET("/get-all", h.getAllCourses)                             // OK courses with READY status for all courses page
+		course.GET("/get-latest-eight", h.getLatestEightCourses)            // OK
+		course.POST("/create-base", h.createCourseBase)                     // OK type must be 'course' or 'practice'
+		//course.PUT("/update", h.updateCourse)
+		//course.DELETE("/delete", h.deleteCourse) // poka ne nado
 		course.GET("/search-courses-by-title", h.searchCoursesByTitle)
 		course.GET("/get-all-courses-by-instructor-id", h.getAllCoursesByInstructorID) // для вывода курсов по id инструктора которые он создал
 		course.PUT("/update-course-goals", h.updateCourseGoals)
@@ -85,10 +84,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/approve-course", h.approveCourse)
 		course.POST("/reject-course", h.rejectCourse)
 		course.POST("/upload-course-materials", h.uploadCourseMaterials)
-		course.GET("/get-course-info", h.getCourseInfo)
+		course.GET("/get-full-course", h.getFullCourse)          // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
+		course.GET("/get-full-course-to-check", h.getFullCourse) // получаем всю инфу о курсе, который находится в статусе PENDING, это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
-		course.GET("/get-courses-approved", h.getCoursesApproved)
-
 	}
 	directories := router.Group("/directories")
 	{
@@ -105,6 +103,20 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		threads.GET("/search-threads-by-title", h.searchThreadsByTitle)
 		threads.GET("/get-one-thread", h.getOneThread) // here we must get all threads messages
 		threads.POST("/add-tag-to-thread", h.addTagToThread)
+	}
+
+	files := router.Group("/files")
+	{
+		files.POST("/upload-user-avatar", h.uploadUserAvatar)
+		files.POST("/upload-course-avatar", h.uploadCourseAvatar)
+		files.POST("/upload-course-preview-video", h.uploadCoursePreviewVideo)
+		files.POST("/upload-course-lecture", h.uploadCourseLecture)
+		files.GET("/get-user-avatar/:objectID", h.getUserAvatarByFileID)
+		files.GET("/get-course-avatar/:objectID", h.getCourseAvatarByFileID)
+		files.GET("/get-course-preview-video/:objectID", h.getCoursePreviewVideoByFileID)
+		files.GET("/get-course-preview-video/:objectID", h.getCourseLecturesByFileIDs)
+		files.GET("/get-courses-avatars", h.getCoursesAvatarsByFileIDs) // for all courses page
+
 	}
 
 	return router

@@ -76,34 +76,6 @@ func (h *Handler) setHasUserTriedInstructorToTrue(ctx *gin.Context) {
 	}
 }
 
-type GetSelfInfoRequest struct {
-	ID int32 `json:"id"`
-}
-
-func (h *Handler) getSelfInfo(ctx *gin.Context) {
-	var input GetSelfInfoRequest // id
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	user, err := h.us.GetSelfInfo(ctx, input.ID)
-	if err != nil {
-		return
-	}
-
-	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"id":           user.ID,
-		"full_name":    user.FullName,
-		"description":  user.Description,
-		"email":        user.Email,
-		"avatar":       user.Avatar,
-		"phone_number": user.PhoneNumber,
-	})
-
-}
-
 type UpdateAvatarStruct struct {
 	ID int32 `json:"id"`
 }

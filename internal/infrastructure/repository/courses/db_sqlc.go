@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.26.0
 
-package directories_repo
+package courses
 
 import (
 	"context"

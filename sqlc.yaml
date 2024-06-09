@@ -6,11 +6,11 @@ sql:
       emit_params_struct_pointers: true
       emit_pointers_for_null_types: true
       emit_result_struct_pointers: true
-      out: internal\infrastructure\repository\users_repo\
+      out: internal\infrastructure\repository\users\
       output_db_file_name: db_sqlc.go
       output_files_suffix: _sqlc
-      package: users_repo
+      package: users
       sql_package: pgx/v5
-  queries: internal\infrastructure\repository\users_repo\query.sql
+  queries: internal\infrastructure\repository\users\query.sql
   schema: migrations
 version: "2"

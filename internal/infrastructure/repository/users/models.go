@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.26.0
 
-package directories_repo
+package users
 
 import (
 	"database/sql/driver"
@@ -99,9 +99,9 @@ func (ns NullHumanResourcesCourseTypes) Value() (driver.Value, error) {
 type HumanResourcesRoles string
 
 const (
-	HumanResourcesRolesAdmin     HumanResourcesRoles = "admin"
-	HumanResourcesRolesModerator HumanResourcesRoles = "moderator"
-	HumanResourcesRolesUsers     HumanResourcesRoles = "users"
+	HumanResourcesRolesADMIN     HumanResourcesRoles = "ADMIN"
+	HumanResourcesRolesMODERATOR HumanResourcesRoles = "MODERATOR"
+	HumanResourcesRolesUSER      HumanResourcesRoles = "USER"
 )
 
 func (e *HumanResourcesRoles) Scan(src interface{}) error {
@@ -147,29 +147,30 @@ type HumanResourcesCategory struct {
 }
 
 type HumanResourcesCourse struct {
-	ID             int32
-	AuthorID       int32
-	Title          string
-	Subtitle       *string
-	Description    string
-	AvatarUrl      *string
-	StudentsCount  *int32
-	RatingsCount   *int32
-	Rating         *float64
-	CategoryID     *int32
-	SubcategoryID  *int32
-	Language       *string
-	Level          *string
-	TimePlanned    *string
-	CourseGoals    []string
-	Requirements   []string
-	TargetAudience []string
-	Type           NullHumanResourcesCourseTypes
-	Status         NullHumanResourcesCourseStatuses
-	LecturesLength *int32
-	LecturesCount  *int32
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	ID              int32
+	AuthorID        int32
+	Title           string
+	Subtitle        *string
+	Description     string
+	AvatarUrl       *string
+	StudentsCount   *int32
+	RatingsCount    *int32
+	Rating          *float64
+	CategoryID      *int32
+	SubcategoryID   *int32
+	Language        *string
+	Level           *string
+	TimePlanned     *string
+	CourseGoals     []string
+	Requirements    []string
+	TargetAudience  []string
+	Type            NullHumanResourcesCourseTypes
+	Status          NullHumanResourcesCourseStatuses
+	LecturesLength  *int32
+	LecturesCount   *int32
+	PreviewVideoUrl *string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type HumanResourcesCoursesAttendant struct {
@@ -180,13 +181,11 @@ type HumanResourcesCoursesAttendant struct {
 }
 
 type HumanResourcesCoursesLecture struct {
-	ID          int32
-	CourseID    int32
-	LectureID   int32
-	Name        string
-	Description *string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID        int32
+	CourseID  int32
+	LectureID int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type HumanResourcesCoursesReview struct {
@@ -209,7 +208,7 @@ type HumanResourcesCoursesTest struct {
 type HumanResourcesForumThread struct {
 	ID        int32
 	Title     string
-	Body      string
+	UserID    int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
@@ -226,9 +225,9 @@ type HumanResourcesForumThreadsMessage struct {
 type HumanResourcesInstructorsInfo struct {
 	ID                    int32
 	UserID                int32
-	HasPreviousExperience string
-	HasVideoKnowledge     string
-	CurrentAudienceCount  string
+	HasPreviousExperience bool
+	HasVideoKnowledge     bool
+	CurrentAudience       string
 	CreatedAt             pgtype.Timestamptz
 	UpdatedAt             pgtype.Timestamptz
 }
@@ -321,11 +320,12 @@ type HumanResourcesUser struct {
 	ID                     int32
 	FullName               string
 	Description            *string
-	Avatar                 []byte
+	AvatarUrl              *string
 	Email                  string
 	PasswordHashed         string
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
 	HasUserTriedInstructor *bool
 	PhoneNumber            string
+	Role                   NullHumanResourcesRoles
 }

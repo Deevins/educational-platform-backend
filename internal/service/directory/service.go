@@ -1,9 +1,9 @@
-package directory_service
+package directory
 
 import (
 	"context"
 	"github.com/deevins/educational-platform-backend/internal/handler"
-	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/directories_repo"
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/directories"
 	"github.com/deevins/educational-platform-backend/internal/model"
 	"github.com/pkg/errors"
 )
@@ -12,14 +12,14 @@ import (
 
 var _ handler.DirectoryService = &Service{}
 
-func NewService(repo directories_repo.Querier) *Service {
+func NewService(repo directories.Querier) *Service {
 	return &Service{
 		repo: repo,
 	}
 }
 
 type Service struct {
-	repo directories_repo.Querier
+	repo directories.Querier
 }
 
 func (s *Service) GetLanguages(ctx context.Context) ([]*model.Language, error) {
@@ -38,7 +38,7 @@ func (s *Service) GetLanguages(ctx context.Context) ([]*model.Language, error) {
 	return output, nil
 }
 
-func repackDBToModel(dbCategories []*directories_repo.GetCategoriesAndSubcategoriesRow) []*model.Category {
+func repackDBToModel(dbCategories []*directories.GetCategoriesAndSubcategoriesRow) []*model.Category {
 	categoryMap := make(map[int32]*model.Category)
 	var categories []*model.Category
 

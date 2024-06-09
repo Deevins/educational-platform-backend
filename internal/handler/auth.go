@@ -45,7 +45,7 @@ func (h *Handler) signIn(ctx *gin.Context) {
 		return
 	}
 
-	res, err := h.as.GenerateToken(ctx, input.Email, input.Password)
+	res, err := h.as.Authorize(ctx, input.Email, input.Password)
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
