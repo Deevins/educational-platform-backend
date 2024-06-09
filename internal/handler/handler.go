@@ -18,7 +18,7 @@ type UserService interface {
 	GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool, error)
 	SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error
 	GetSelfInfo(ctx context.Context, ID int32) (*model.User, error)
-	UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) error
+	UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) (string, error)
 	AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
 	UpdateUserInfo(ctx context.Context, user *model.UserUpdate) error
 	GetUserAvatarByFileID(ctx context.Context, fileID string) (*model.UserIDWithResourceLink, error)
@@ -62,30 +62,27 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.GET("/get-one", h.getOneUser)
 		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)                       // ok
 		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // ok
-		user.PUT("/update-avatar", h.updateAvatar)                                             // poxyi pokA
 		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)             // ok
 		user.PUT("/update-user-info", h.updateUserInfo)                                        // ok
+		user.POST("/update-avatar", h.updateAvatar)                                            // OK
 	}
 	course := router.Group("/courses")
 	{
-		course.GET("/get-one/:courseID", h.getOneCourse)                    // temp OK
-		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID) // для вывода курсов по id пользователя у него на странице или еще где ok
-		course.GET("/get-all", h.getAllCourses)                             // OK courses with READY status for all courses page
-		course.GET("/get-latest-eight", h.getLatestEightCourses)            // OK
-		course.POST("/create-base", h.createCourseBase)                     // OK type must be 'course' or 'practice'
-		//course.PUT("/update", h.updateCourse)
-		//course.DELETE("/delete", h.deleteCourse) // poka ne nado
-		course.GET("/search-courses-by-title", h.searchCoursesByTitle)
-		course.GET("/get-all-courses-by-instructor-id", h.getAllCoursesByInstructorID) // для вывода курсов по id инструктора которые он создал
-		course.PUT("/update-course-goals", h.updateCourseGoals)
-		course.PUT("/update-course-curriculum", h.updateCourseCurriculum)
-		course.PUT("/update/course/basics", h.updateCourseBasics)
-		course.POST("/send-to-check", h.sendToCheck)
-		course.POST("/approve-course", h.approveCourse)
-		course.POST("/reject-course", h.rejectCourse)
-		course.POST("/upload-course-materials", h.uploadCourseMaterials)
-		course.GET("/get-full-course", h.getFullCourse)          // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
-		course.GET("/get-full-course-to-check", h.getFullCourse) // получаем всю инфу о курсе, который находится в статусе PENDING, это где страница на которой его можно проходить
+		course.GET("/get-one/:courseID", h.getOneCourse)                                             // temp OK
+		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)                          // для вывода курсов по id пользователя у него на странице или еще где ok
+		course.GET("/get-all", h.getAllCourses)                                                      // OK courses with READY status for all courses page
+		course.GET("/get-latest-eight", h.getLatestEightCourses)                                     // OK
+		course.POST("/create-base/:courseID", h.createCourseBase)                                    // OK type must be 'course' or 'practice'
+		course.DELETE("/delete/:courseID", h.deleteCourse)                                           // OK
+		course.GET("/search-courses-by-title", h.searchCoursesByTitle)                               // OK
+		course.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
+		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
+		course.POST("/send-to-check/:courseID", h.sendToCheck)
+		course.POST("/approve-course/:courseID", h.approveCourse)
+		course.POST("/reject-course/:courseID", h.rejectCourse)
+		course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
+		course.GET("/get-full-course/:courseID", h.getFullCourse)          // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
+		course.GET("/get-full-course-to-check/:courseID", h.getFullCourse) // получаем всю инфу о курсе, который находится в статусе PENDING, это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
 	}
 	directories := router.Group("/directories")
@@ -105,19 +102,19 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		threads.POST("/add-tag-to-thread", h.addTagToThread)
 	}
 
-	files := router.Group("/files")
-	{
-		files.POST("/upload-user-avatar", h.uploadUserAvatar)
-		files.POST("/upload-course-avatar", h.uploadCourseAvatar)
-		files.POST("/upload-course-preview-video", h.uploadCoursePreviewVideo)
-		files.POST("/upload-course-lecture", h.uploadCourseLecture)
-		files.GET("/get-user-avatar/:objectID", h.getUserAvatarByFileID)
-		files.GET("/get-course-avatar/:objectID", h.getCourseAvatarByFileID)
-		files.GET("/get-course-preview-video/:objectID", h.getCoursePreviewVideoByFileID)
-		files.GET("/get-course-preview-video/:objectID", h.getCourseLecturesByFileIDs)
-		files.GET("/get-courses-avatars", h.getCoursesAvatarsByFileIDs) // for all courses page
+	//files := router.Group("/files")
+	//{
+	//files.POST("/upload-user-avatar", h.updateAvatar)
+	//files.POST("/upload-course-avatar", h.uploadCourseAvatar)
+	//files.POST("/upload-course-preview-video", h.uploadCoursePreviewVideo)
+	//files.POST("/upload-course-lecture", h.uploadCourseLecture)
+	//files.GET("/get-user-avatar/:objectID", h.getUserAvatarByFileID)
+	//files.GET("/get-course-avatar/:objectID", h.getCourseAvatarByFileID)
+	//files.GET("/get-course-preview-video/:objectID", h.getCoursePreviewVideoByFileID)
+	//files.GET("/get-course-preview-video/:objectID", h.getCourseLecturesByFileIDs)
+	//files.GET("/get-courses-avatars", h.getCoursesAvatarsByFileIDs) // for all courses page
 
-	}
+	//}
 
 	return router
 }

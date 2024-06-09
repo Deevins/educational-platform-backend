@@ -74,10 +74,10 @@ func (s *Service) GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool
 	return *hasUsed, nil
 }
 
-func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) error {
+func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) (string, error) {
 	url, err := s.s3.CreateOne(avatar)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	_, err = s.repo.UpdateAvatar(ctx, &users.UpdateAvatarParams{
@@ -85,10 +85,10 @@ func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileData
 		AvatarUrl: &url,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return url, nil
 }
 
 func (s *Service) AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {

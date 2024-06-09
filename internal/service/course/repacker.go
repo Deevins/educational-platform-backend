@@ -61,23 +61,44 @@ func repackDBCoursesToShortModel(courses []*courses.GetUserCoursesRow) []*model.
 	return modelCourses
 }
 
-func mapTypeToDBType(courseType string) courses.NullHumanResourcesCourseTypes {
+func mapTypeToDBType(courseType string) courses.HumanResourcesCourseTypes {
 	switch courseType {
 	case "course":
-		return courses.NullHumanResourcesCourseTypes{
-			HumanResourcesCourseTypes: courses.HumanResourcesCourseTypesCourse,
-			Valid:                     true,
-		}
+
+		return courses.HumanResourcesCourseTypesCourse
 	case "practice":
-		return courses.NullHumanResourcesCourseTypes{
-			HumanResourcesCourseTypes: courses.HumanResourcesCourseTypesPracticeCourse,
-			Valid:                     true,
-		}
+		return courses.HumanResourcesCourseTypesPracticeCourse
 	default:
-		return courses.NullHumanResourcesCourseTypes{
-			HumanResourcesCourseTypes: courses.HumanResourcesCourseTypesCourse,
-			Valid:                     true,
-		}
+		return courses.HumanResourcesCourseTypesCourse
 	}
 
+}
+
+func repackInstructorCoursesToModel(instructorCourses []*courses.GetInstructorCoursesRow) ([]*model.InstructorCourse, error) {
+	var coursesList []*model.InstructorCourse
+	for _, c := range instructorCourses {
+
+		coursesList = append(coursesList, &model.InstructorCourse{
+			ID:        c.ID,
+			Title:     c.Title,
+			AvatarURL: *c.AvatarUrl,
+			Status:    string(c.Status),
+		})
+	}
+
+	return coursesList, nil
+}
+
+func repackSearchInstructorCoursesByTitleToModel(courses []*courses.SearchInstructorCoursesByTitleRow) ([]*model.InstructorCourse, error) {
+	var coursesList []*model.InstructorCourse
+	for _, c := range courses {
+		coursesList = append(coursesList, &model.InstructorCourse{
+			ID:        c.ID,
+			Title:     c.Title,
+			AvatarURL: *c.AvatarUrl,
+			Status:    string(c.Status),
+		})
+	}
+
+	return coursesList, nil
 }

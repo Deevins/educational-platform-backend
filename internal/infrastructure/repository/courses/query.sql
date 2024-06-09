@@ -12,7 +12,7 @@ VALUES (@title,
         @time_planned
        ) RETURNING id;
 
--- name: AddCourseGoals :one
+-- name: UpdateCourseGoals :one
 UPDATE human_resources.courses SET course_goals = @course_goals, requirements = @requirements, target_audience = @target_audience, updated_at = now() WHERE id = @id RETURNING id;
 
 -- name: AddCourseBasicInfo :one
@@ -27,7 +27,11 @@ UPDATE human_resources.courses SET
                         WHERE id = @id RETURNING id;
 
 -- name: GetUserCourses :many
-SELECT c.id, c.title, c.description, c.avatar_url, c.subtitle, c.rating, c.students_count, c.ratings_count, c.lectures_length FROM human_resources.courses c
+SELECT c.id, c.title, c.description,
+       c.avatar_url, c.subtitle,
+       c.rating, c.students_count,
+       c.ratings_count,
+       c.lectures_length FROM human_resources.courses c
                     INNER JOIN human_resources.courses_attendants uc ON c.id = uc.course_id
 WHERE uc.user_id = @user_id
   AND c.status != 'DRAFT'
@@ -78,27 +82,120 @@ UPDATE human_resources.courses SET avatar_url = @avatar_url WHERE id = @id RETUR
 -- name: UpdateCoursePreviewVideo :one
 UPDATE human_resources.courses SET preview_video_url = @preview_video_url, updated_at = now() WHERE id = @id RETURNING preview_video_url;
 
+-- name: CreateSection :one
+INSERT INTO human_resources.sections (title, description, course_id) VALUES (@title, @description, @course_id) RETURNING id;
 
--- name: InsertLectureAndCourseLecture :one
--- Вставляет лекцию в таблицу lectures и соответствующую запись в таблицу courses_lectures
-WITH inserted_lecture AS (
-    INSERT INTO human_resources.lectures (video_url)
-        VALUES (@video_url)
-        RETURNING id
-)
-INSERT INTO human_resources.courses_lectures (course_id, lecture_id)
-VALUES (@course_id, (SELECT id FROM inserted_lecture))
-RETURNING id, course_id, lecture_id;
 
+-- name: GetCourseSections :many
+SELECT s.id, s.title, s.description FROM human_resources.sections s
+                    INNER JOIN human_resources.courses cs ON s.course_id = cs.id
+WHERE cs.id = @course_id
+ORDER BY
+    s.created_at DESC;
+
+-- name: RemoveSection :one
+DELETE FROM human_resources.sections WHERE id = @id RETURNING id;
+
+-- name: UpdateSectionTitle :one
+UPDATE human_resources.sections SET title = @title WHERE id = @id RETURNING id;
 
 -- name: InsertLectureTitleAndDescription :one
 UPDATE human_resources.lectures SET title = @title, description = @description WHERE id = @id RETURNING id;
+
+-- name: InsertLectureVideoUrl :one
+UPDATE human_resources.lectures SET video_url = @video_url WHERE id = @id RETURNING id;
 
 -- name: UpdateLectureTitle :one
 UPDATE human_resources.lectures SET title = @title WHERE id = @id RETURNING id;
 
 -- name: RemoveLecture :one
-DELETE FROM human_resources.lectures WHERE id = @id RETURNING id;
+DELETE FROM human_resources.lectures WHERE id = @id AND section_id = @section_id RETURNING id;
 
--- name: RemoveLectureFromCourse :one
-DELETE FROM human_resources.courses_lectures WHERE id = @id RETURNING id;
+-- name: GetInstructorCourses :many
+SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c WHERE author_id = @author_id ORDER BY created_at DESC;
+
+-- name: SearchInstructorCoursesByTitle :many
+SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c
+WHERE to_tsvector('russian', c.title) @@ plainto_tsquery('russian', @title)
+  AND author_id = @author_id;
+
+-- name: RemoveCourse :one
+DELETE FROM human_resources.courses WHERE id = @id RETURNING id;
+
+-- name: GetFullCourseInfoWithInstructorByCourseID :one
+SELECT c.id as course_id, c.title, c.subtitle,
+       c.description, c.language, c.level, u.description as instructor_description,
+       c.rating, c.students_count, c.ratings_count, c.lectures_count,
+       c.lectures_length, c.avatar_url as course_avatar_url, c.preview_video_url,
+       c.status as course_status, c.created_at as course_created_at, c.course_goals, c.requirements,
+       c.target_audience, c.author_id, cg.name as category_title, u.full_name as instructor_full_name,
+       u.students_count as instructor_students_count, u.courses_count as instructor_courses_count, u.instructor_rating,
+       u.avatar_url as instructor_avatar_url, u.id as instructor_id FROM human_resources.courses c
+                     JOIN human_resources.users u ON c.author_id = u.id
+                     JOIN human_resources.categories cg on cg.id = c.category_id
+WHERE c.id = @id;
+
+
+-- name: GetSectionsWithLecturesAndTestsByCourseID :many
+WITH recursive_section AS (
+    SELECT
+        s.id AS section_id,
+        s.title AS section_title,
+        s.description AS section_description,
+        s.course_id AS course_id,
+        l.id AS lecture_id,
+        l.title AS lecture_title,
+        l.description AS lecture_description,
+        l.video_url AS lecture_video_url,
+        t.id AS test_id,
+        t.name AS test_name,
+        q.id AS question_id,
+        q.body AS question_body
+    FROM
+        human_resources.sections s
+            LEFT JOIN
+        human_resources.lectures l ON s.id = l.section_id
+            LEFT JOIN
+        human_resources.tests t ON s.id = t.section_id
+            LEFT JOIN
+        human_resources.tests_questions q ON t.id = q.test_id
+    WHERE
+        s.course_id = @course_id
+)
+SELECT
+    section_id,
+    section_title,
+    section_description,
+    json_agg(
+            json_build_object(
+                    'lecture_id', lecture_id,
+                    'lecture_title', lecture_title,
+                    'lecture_description', lecture_description,
+                    'lecture_video_url', lecture_video_url
+            )
+    ) AS lectures,
+    json_agg(
+            json_build_object(
+                    'test_id', test_id,
+                    'test_name', test_name,
+                    'questions', json_agg(
+                            json_build_object(
+                                    'question_id', question_id,
+                                    'question_body', question_body
+                            )
+                                 )
+            )
+    ) AS tests
+FROM
+    recursive_section
+GROUP BY
+    section_id, section_title, section_description;
+
+-- name: GetCoursesAvatarsByIDs :many
+SELECT id, avatar_url FROM human_resources.courses WHERE id = ANY($1::int[]);
+
+-- name: GetCourseAvatarByID :one
+SELECT avatar_url FROM human_resources.courses WHERE id = @id;
+
+-- name: GetCoursePreviewVideoByID :one
+SELECT preview_video_url FROM human_resources.courses WHERE id = @id;

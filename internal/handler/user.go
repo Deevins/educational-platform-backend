@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
+	"github.com/deevins/educational-platform-backend/pkg/httpResponses"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 )
 
 type GetOneUserInfoRequest struct {
@@ -29,7 +32,7 @@ func (h *Handler) getOneUser(ctx *gin.Context) {
 		"full_name":    user.FullName,
 		"description":  user.Description,
 		"email":        user.Email,
-		"avatar":       user.Avatar,
+		"avatar_url":   user.AvatarUrl,
 		"phone_number": user.PhoneNumber,
 	})
 
@@ -81,40 +84,63 @@ type UpdateAvatarStruct struct {
 }
 
 func (h *Handler) updateAvatar(ctx *gin.Context) {
-	var input UpdateAvatarStruct // id
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	file, _, err := ctx.Request.FormFile("file")
+	file, err := ctx.FormFile("file")
 	if err != nil {
 		ctx.String(http.StatusBadRequest, "Unable to retrieve file: %v", err)
 		return
 	}
-	defer func(file multipart.File) {
-		err := file.Close()
+
+	userIDStr := ctx.PostForm("user_id")
+	userID, err := strconv.Atoi(userIDStr)
+	if userID == 0 {
+		ctx.JSON(http.StatusBadRequest, httpResponses.ErrorResponse{
+			Status: http.StatusBadRequest,
+			Error:  "User ID is required",
+		})
+		return
+
+	}
+
+	// Открываем файл для чтения
+	f, err := file.Open()
+	if err != nil {
+		// Если файл не удается открыть, возвращаем ошибку с соответствующим статусом и сообщением
+		ctx.JSON(http.StatusInternalServerError, httpResponses.ErrorResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Unable to open the file",
+			Details: err,
+		})
+		return
+	}
+	defer func(f multipart.File) {
+		err := f.Close()
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, "Unable to close file: %v", err)
-			return
 		}
-	}(file)
+	}(f) // Закрываем файл после завершения работы с ним
 
 	// Чтение содержимого файла
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := io.ReadAll(f)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, "Unable to read file: %v", err)
 		return
 	}
 
-	err = h.us.UpdateAvatar(ctx, input.ID, fileBytes)
+	url, err := h.us.UpdateAvatar(ctx, int32(userID), S3.FileDataType{
+		FileName: file.Filename,
+		Data:     fileBytes,
+	})
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 
 	}
 
-	ctx.String(http.StatusOK, "File uploaded successfully")
+	ctx.JSON(http.StatusOK, httpResponses.SuccessResponse{
+		Status:  http.StatusOK,
+		Message: "File uploaded successfully",
+		Data:    url, // URL-адрес загруженного файла
+	})
 }
 
 func (h *Handler) updateUserTeachingExperience(ctx *gin.Context) {
@@ -132,7 +158,7 @@ func (h *Handler) updateUserTeachingExperience(ctx *gin.Context) {
 }
 
 func (h *Handler) updateUserInfo(ctx *gin.Context) {
-	var input model.UserUpdate
+	var input *model.UserUpdate
 
 	if err := ctx.BindJSON(&input); err != nil {
 		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())

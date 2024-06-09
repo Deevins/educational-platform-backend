@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS human_resources.tests_questions (
     id SERIAL PRIMARY KEY,
     test_id INT NOT NULL,
     body TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );

@@ -69,7 +69,7 @@ func (q *Queries) GetHasUserTriedInstructor(ctx context.Context, id int32) (*boo
 }
 
 const getUserByEmailAndHashedPassword = `-- name: GetUserByEmailAndHashedPassword :one
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role from human_resources.users WHERE email = $1 AND password_hashed = $2 LIMIT 1
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role, students_count, courses_count, instructor_rating from human_resources.users WHERE email = $1 AND password_hashed = $2 LIMIT 1
 `
 
 type GetUserByEmailAndHashedPasswordParams struct {
@@ -92,12 +92,15 @@ func (q *Queries) GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetU
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.StudentsCount,
+		&i.CoursesCount,
+		&i.InstructorRating,
 	)
 	return &i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role from human_resources.users WHERE id = $1
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role, students_count, courses_count, instructor_rating from human_resources.users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error) {
@@ -115,12 +118,15 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (*HumanResourcesUse
 		&i.HasUserTriedInstructor,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.StudentsCount,
+		&i.CoursesCount,
+		&i.InstructorRating,
 	)
 	return &i, err
 }
 
 const getUsers = `-- name: GetUsers :many
-SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role from human_resources.users
+SELECT id, full_name, description, avatar_url, email, password_hashed, created_at, updated_at, has_user_tried_instructor, phone_number, role, students_count, courses_count, instructor_rating from human_resources.users
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
@@ -144,6 +150,9 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 			&i.HasUserTriedInstructor,
 			&i.PhoneNumber,
 			&i.Role,
+			&i.StudentsCount,
+			&i.CoursesCount,
+			&i.InstructorRating,
 		); err != nil {
 			return nil, err
 		}

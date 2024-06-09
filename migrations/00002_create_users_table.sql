@@ -12,7 +12,10 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     has_user_tried_instructor BOOLEAN DEFAULT FALSE,
     phone_number VARCHAR(255) NOT NULL,
-    role human_resources.roles DEFAULT 'USER'
+    role human_resources.roles DEFAULT 'USER',
+    students_count INTEGER DEFAULT 0 not null,
+    courses_count INTEGER DEFAULT 0 not null,
+    instructor_rating INTEGER DEFAULT 0 not null
 );
 
 

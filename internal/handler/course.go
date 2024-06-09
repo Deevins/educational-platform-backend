@@ -18,18 +18,21 @@ type CourseService interface {
 	GetAllDraftCourses(ctx context.Context) ([]*model.ShortCourse, error)
 	ApproveCourse(ctx context.Context, ID int32) (int32, error)
 	RejectCourse(ctx context.Context, ID int32) (int32, error)
-	SentCourseToCheck(ctx context.Context, ID int32) (int32, error)
+	SendCourseToCheck(ctx context.Context, ID int32) (int32, error)
 	CreateCourseBase(ctx context.Context, base *model.CourseBase) (int32, error)
 	SearchCoursesByTitle(ctx context.Context, title string) ([]*model.ShortCourse, error)
-	UploadUserAvatar(ctx context.Context, userID int32, avatar S3.FileDataType) (string, error)
+
 	UploadCourseAvatar(ctx context.Context, courseID int32, avatar S3.FileDataType) (string, error)
 	UploadCoursePreviewVideo(ctx context.Context, courseID int32, video S3.FileDataType) (string, error)
-	UploadCourseLecture(ctx context.Context, courseID int32, lecture S3.FileDataType) (string, error)
+	UploadCourseLecture(ctx context.Context, lectureID int32, lecture S3.FileDataType) (string, error)
 
-	GetCourseAvatarByFileID(ctx context.Context, fileID string) (*model.CourseIDWithResourceLink, error)
-	GetCoursePreviewVideoByFileID(ctx context.Context, fileID string) (*model.CourseIDWithResourceLink, error)
-	GetCourseLecturesByFileIDs(ctx context.Context, fileIDs []string) ([]*model.CourseIDWithResourceLink, error)
-	GetCoursesAvatarsByFileIDs(ctx context.Context, fileIDs []string) ([]*model.CourseIDWithResourceLink, error)
+	GetCourseAvatarByCourseID(ctx context.Context, courseID int32) (*model.CourseIDWithResourceLink, error)
+	GetCoursePreviewVideoByCourseID(ctx context.Context, courseID int32) (*model.CourseIDWithResourceLink, error)
+	GetCoursesAvatarsByCourseIDs(ctx context.Context, courseIDs []int32) ([]*model.CourseIDWithResourceLink, error)
+	GetInstructorCourses(ctx context.Context, instructorID int32) ([]*model.InstructorCourse, error)
+	SearchInstructionCoursesByTitle(ctx context.Context, instructorID int32, title string) ([]*model.InstructorCourse, error)
+	RemoveCourseByID(ctx context.Context, courseID int32) error
+	UpdateCourseGoals(ctx context.Context, courseID int32, goals *model.UpdateCourseGoals) error
 }
 
 func (h *Handler) getOneCourse(ctx *gin.Context) {
@@ -90,11 +93,25 @@ func (h *Handler) createCourseBase(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"course_id": courseID})
 }
 
-func (h *Handler) updateCourse(ctx *gin.Context) {
-
-}
 func (h *Handler) deleteCourse(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
 
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	err = h.cs.RemoveCourseByID(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course deleted"})
 }
 
 type SearchBase struct {
@@ -120,35 +137,79 @@ func (h *Handler) searchCoursesByTitle(ctx *gin.Context) {
 
 // here we must fetch courses ne smotrya na status
 func (h *Handler) getAllCoursesByInstructorID(ctx *gin.Context) {
+	if ctx.Param("instructorID") == "" {
+		ctx.JSON(400, gin.H{"error": "instructorID is empty"})
+		return
+	}
 
+	instructorID, err := strconv.ParseInt(ctx.Param("instructorID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "instructorID is not a number"})
+		return
+	}
+
+	courses, err := h.cs.GetInstructorCourses(ctx, int32(instructorID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, courses)
 }
+
 func (h *Handler) updateCourseGoals(ctx *gin.Context) {
+	var goals *model.UpdateCourseGoals
+
+	if ctx.ShouldBindJSON(goals) != nil {
+		ctx.JSON(400, gin.H{"error": "invalid input"})
+		return
+	}
+
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	err = h.cs.UpdateCourseGoals(ctx, int32(courseID), goals)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "goals updated"})
 
 }
-func (h *Handler) updateCourseCurriculum(ctx *gin.Context) {
 
-}
-func (h *Handler) updateCourseBasics(ctx *gin.Context) {
-
-}
 func (h *Handler) sendToCheck(ctx *gin.Context) {
 
 }
+
 func (h *Handler) approveCourse(ctx *gin.Context) {
 
 }
+
 func (h *Handler) rejectCourse(ctx *gin.Context) {
 
 }
+
 func (h *Handler) uploadCourseMaterials(ctx *gin.Context) {
 
 }
+
 func (h *Handler) getFullCourse(ctx *gin.Context) {
 
 }
+
 func (h *Handler) getCoursesWaitingForApproval(ctx *gin.Context) {
 
 }
+
 func (h *Handler) getCoursesApproved(ctx *gin.Context) {
 
 }
@@ -156,7 +217,7 @@ func (h *Handler) getCoursesApproved(ctx *gin.Context) {
 func (h *Handler) getCoursesByUserID(ctx *gin.Context) {
 	fmt.Println(ctx.Param("userID"))
 	if ctx.Param("userID") == "" {
-		ctx.JSON(400, gin.H{"error": "id is empty"})
+		ctx.JSON(400, gin.H{"error": "userID is empty"})
 		return
 	}
 

@@ -164,8 +164,8 @@ type HumanResourcesCourse struct {
 	CourseGoals     []string
 	Requirements    []string
 	TargetAudience  []string
-	Type            NullHumanResourcesCourseTypes
-	Status          NullHumanResourcesCourseStatuses
+	Type            HumanResourcesCourseTypes
+	Status          HumanResourcesCourseStatuses
 	LecturesLength  *int32
 	LecturesCount   *int32
 	PreviewVideoUrl *string
@@ -180,27 +180,12 @@ type HumanResourcesCoursesAttendant struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
-type HumanResourcesCoursesLecture struct {
-	ID        int32
-	CourseID  int32
-	LectureID int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-}
-
 type HumanResourcesCoursesReview struct {
 	ID        int32
 	CourseID  int32
 	UserID    int32
 	Rating    int32
 	Review    string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-}
-
-type HumanResourcesCoursesTest struct {
-	CourseID  int32
-	TestID    int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
@@ -252,6 +237,7 @@ type HumanResourcesLecture struct {
 	ID          int32
 	Title       string
 	Description string
+	SectionID   int32
 	VideoUrl    string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
@@ -263,6 +249,15 @@ type HumanResourcesNotification struct {
 	Message   string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+}
+
+type HumanResourcesSection struct {
+	ID          int32
+	Title       string
+	Description string
+	CourseID    int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type HumanResourcesSkillLevel struct {
@@ -283,6 +278,7 @@ type HumanResourcesSubcategory struct {
 type HumanResourcesTest struct {
 	ID        int32
 	Name      string
+	SectionID int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
@@ -291,6 +287,7 @@ type HumanResourcesTestsQuestion struct {
 	ID        int32
 	TestID    int32
 	Body      string
+	IsCorrect bool
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
@@ -328,4 +325,7 @@ type HumanResourcesUser struct {
 	HasUserTriedInstructor *bool
 	PhoneNumber            string
 	Role                   NullHumanResourcesRoles
+	StudentsCount          int32
+	CoursesCount           int32
+	InstructorRating       int32
 }
