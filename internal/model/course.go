@@ -91,25 +91,6 @@ type UpdateCourseGoals struct {
 	TargetAudience []string `json:"target_audience"`
 }
 
-type Lecture struct {
-	LectureID          int32  `json:"lecture_id"`
-	LectureTitle       string `json:"lecture_title"`
-	LectureDescription string `json:"lecture_description"`
-	LectureVideoURL    string `json:"lecture_video_url"`
-}
-
-type Question struct {
-	QuestionID   int32  `json:"question_id"`
-	IsCorrect    bool   `json:"is_correct"`
-	QuestionBody string `json:"question_body"`
-}
-
-type Test struct {
-	TestID    int32      `json:"test_id"`
-	TestName  string     `json:"test_name"`
-	Questions []Question `json:"questions"`
-}
-
 type CourseSection struct {
 	SectionID          int32      `json:"section_id"`
 	SectionTitle       string     `json:"section_title"`

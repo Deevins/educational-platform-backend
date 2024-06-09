@@ -68,7 +68,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	}
 	course := router.Group("/courses")
 	{
-		course.GET("/get-one/:courseID", h.getOneCourse)                                             // temp OK
+		//course.GET("/get-one/:courseID", h.getFullCoursePage)                                        // temp OK
 		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)                          // для вывода курсов по id пользователя у него на странице или еще где ok
 		course.GET("/get-all", h.getAllCourses)                                                      // OK courses with READY status for all courses page
 		course.GET("/get-latest-eight", h.getLatestEightCourses)                                     // OK
@@ -81,8 +81,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
 		course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
-		course.GET("/get-full-course/:courseID", h.getFullCourse)          // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
-		course.GET("/get-full-course-to-check/:courseID", h.getFullCourse) // получаем всю инфу о курсе, который находится в статусе PENDING, это где страница на которой его можно проходить
+		course.GET("/get-full-course/:courseID", h.getFullCoursePage) // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
 	}
 	directories := router.Group("/directories")
@@ -101,20 +100,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		threads.GET("/get-one-thread", h.getOneThread) // here we must get all threads messages
 		threads.POST("/add-tag-to-thread", h.addTagToThread)
 	}
-
-	//files := router.Group("/files")
-	//{
-	//files.POST("/upload-user-avatar", h.updateAvatar)
-	//files.POST("/upload-course-avatar", h.uploadCourseAvatar)
-	//files.POST("/upload-course-preview-video", h.uploadCoursePreviewVideo)
-	//files.POST("/upload-course-lecture", h.uploadCourseLecture)
-	//files.GET("/get-user-avatar/:objectID", h.getUserAvatarByFileID)
-	//files.GET("/get-course-avatar/:objectID", h.getCourseAvatarByFileID)
-	//files.GET("/get-course-preview-video/:objectID", h.getCoursePreviewVideoByFileID)
-	//files.GET("/get-course-preview-video/:objectID", h.getCourseLecturesByFileIDs)
-	//files.GET("/get-courses-avatars", h.getCoursesAvatarsByFileIDs) // for all courses page
-
-	//}
 
 	return router
 }

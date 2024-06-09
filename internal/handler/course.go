@@ -35,7 +35,7 @@ type CourseService interface {
 	UpdateCourseGoals(ctx context.Context, courseID int32, goals *model.UpdateCourseGoals) error
 }
 
-func (h *Handler) getOneCourse(ctx *gin.Context) {
+func (h *Handler) getFullCoursePage(ctx *gin.Context) {
 	if ctx.Param("courseID") == "" {
 		ctx.JSON(400, gin.H{"error": "courseID is empty"})
 		return
@@ -64,7 +64,6 @@ func (h *Handler) getAllCourses(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, courses)
-
 }
 
 func (h *Handler) getLatestEightCourses(ctx *gin.Context) {
@@ -183,35 +182,91 @@ func (h *Handler) updateCourseGoals(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "goals updated"})
-
 }
 
 func (h *Handler) sendToCheck(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
 
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	_, err = h.cs.SendCourseToCheck(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course sent to check"})
 }
 
 func (h *Handler) approveCourse(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
 
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	_, err = h.cs.ApproveCourse(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course approved"})
 }
 
 func (h *Handler) rejectCourse(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
 
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	_, err = h.cs.RejectCourse(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course rejected"})
 }
 
 func (h *Handler) uploadCourseMaterials(ctx *gin.Context) {
 
 }
 
-func (h *Handler) getFullCourse(ctx *gin.Context) {
-
-}
-
 func (h *Handler) getCoursesWaitingForApproval(ctx *gin.Context) {
+	courses, err := h.cs.GetAllPendingCourses(ctx)
+	if err != nil {
+		return
+	}
 
+	ctx.JSON(http.StatusOK, courses)
 }
 
 func (h *Handler) getCoursesApproved(ctx *gin.Context) {
+	courses, err := h.cs.GetAllReadyCourses(ctx)
+	if err != nil {
+		return
+	}
 
+	ctx.JSON(http.StatusOK, courses)
 }
 
 func (h *Handler) getCoursesByUserID(ctx *gin.Context) {
