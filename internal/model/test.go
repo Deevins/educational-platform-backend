@@ -1,24 +1,19 @@
 package model
 
-type Question struct {
-	IsCorrect    bool   `json:"is_correct"`
-	QuestionBody string `json:"question_body"`
-}
-
 type Test struct {
 	TestID    int32      `json:"test_id"`
 	TestName  string     `json:"test_name"`
 	Questions []Question `json:"questions"`
 }
 
-type InsertQuestion struct {
-	QuestionBody string `json:"question_body"`
-	IsCorrect    bool   `json:"is_correct"`
+type Question struct {
+	QuestionBody string     `json:"question_body"`
+	Answers      []Response `json:"answers"`
 }
 
 type Response struct {
-	TestID       int32  `json:"test_id"`
 	ResponseText string `json:"response_text"`
+	Description  string `json:"description"`
 	IsCorrect    bool   `json:"is_correct"`
 }
 

@@ -33,3 +33,9 @@ INSERT INTO human_resources.instructors_info (user_id, has_video_knowledge, curr
 
 -- name: UpdateAvatar :one
 UPDATE human_resources.users SET avatar_url = @avatar_url WHERE id = @id RETURNING id;
+
+-- name: RegisterToCourse :one
+INSERT INTO human_resources.courses_attendants (user_id, course_id) VALUES (@user_id, @course_id) ON CONFLICT do nothing RETURNING user_id;
+
+-- name: CheckIfUserRegisteredToCourse :one
+SELECT * from human_resources.courses_attendants WHERE user_id = @user_id AND course_id = @course_id;

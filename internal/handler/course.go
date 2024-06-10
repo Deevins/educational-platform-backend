@@ -622,8 +622,13 @@ func (h *Handler) updateSectionTitle(ctx *gin.Context) {
 		return
 	}
 
-	h.cs.UpdateSectionTitle(ctx, int32(sectionID), input.Title)
+	title, err := h.cs.UpdateSectionTitle(ctx, int32(sectionID), input.Title)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
 
+	ctx.JSON(http.StatusOK, gin.H{"message": title})
 }
 
 type UpdateLectureTitle struct {
@@ -647,7 +652,13 @@ func (h *Handler) updateLectureTitle(ctx *gin.Context) {
 		return
 	}
 
-	h.cs.UpdateLectureTitle(ctx, int32(lectureID), input.Title)
+	title, err := h.cs.UpdateLectureTitle(ctx, int32(lectureID), input.Title)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": title})
 }
 
 type UpdateTestTitle struct {
@@ -672,12 +683,42 @@ func (h *Handler) updateTestTitle(ctx *gin.Context) {
 		return
 	}
 
-	h.cs.UpdateTestTitle(ctx, int32(testID), input.Title)
+	title, err := h.cs.UpdateTestTitle(ctx, int32(testID), input.Title)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": title})
 
 }
 
 func (h *Handler) addQuestionsToTest(ctx *gin.Context) {
+	if ctx.Param("testID") == "" {
+		ctx.JSON(400, gin.H{"error": "testID is empty"})
+		return
+	}
 
+	testID, err := strconv.ParseInt(ctx.Param("testID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "testID is not a number"})
+		return
+	}
+
+	var input []*model.Question
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	_, err = h.cs.AddQuestionsToTest(ctx, int32(testID), input)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "questions added"})
 }
 
 func (h *Handler) uploadLectureVideo(ctx *gin.Context) {

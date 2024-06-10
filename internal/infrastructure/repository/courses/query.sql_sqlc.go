@@ -58,6 +58,29 @@ func (q *Queries) ApproveCourse(ctx context.Context, id int32) (int32, error) {
 	return id, err
 }
 
+const createAnswer = `-- name: CreateAnswer :one
+INSERT INTO human_resources.tests_questions_answers (question_id, body, description, is_correct) VALUES ($1, $2, $3, $4) RETURNING id
+`
+
+type CreateAnswerParams struct {
+	QuestionID  int32
+	Body        string
+	Description string
+	IsCorrect   bool
+}
+
+func (q *Queries) CreateAnswer(ctx context.Context, arg *CreateAnswerParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createAnswer,
+		arg.QuestionID,
+		arg.Body,
+		arg.Description,
+		arg.IsCorrect,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createCourseBase = `-- name: CreateCourseBase :one
 INSERT INTO human_resources.courses (
                 title,
@@ -112,6 +135,22 @@ func (q *Queries) CreateLecture(ctx context.Context, arg *CreateLectureParams) (
 		arg.SectionID,
 		arg.SerialNumber,
 	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createQuestion = `-- name: CreateQuestion :one
+INSERT INTO human_resources.tests_questions (test_id, body) VALUES ($1, $2) RETURNING id
+`
+
+type CreateQuestionParams struct {
+	TestID int32
+	Body   string
+}
+
+func (q *Queries) CreateQuestion(ctx context.Context, arg *CreateQuestionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createQuestion, arg.TestID, arg.Body)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
@@ -503,7 +542,10 @@ WITH recursive_section AS (
         t.name AS test_name,
         q.id AS question_id,
         q.body AS question_body,
-        q.is_correct AS question_is_correct
+        a.id AS answer_id,
+        a.body AS answer_body,
+        a.is_correct AS answer_is_correct,
+        a.description AS answer_description
     FROM
         human_resources.sections s
             LEFT JOIN
@@ -512,6 +554,8 @@ WITH recursive_section AS (
         human_resources.tests t ON s.id = t.section_id
             LEFT JOIN
         human_resources.tests_questions q ON t.id = q.test_id
+            LEFT JOIN
+        human_resources.tests_questions_answers a ON q.id = a.question_id
     WHERE
         s.course_id = $1
 )
@@ -535,7 +579,14 @@ SELECT
                             json_build_object(
                                     'question_id', question_id,
                                     'question_body', question_body,
-                                    'question_is_correct', question_is_correct
+                                    'answers', json_agg(
+                                            json_build_object(
+                                                    'answer_id', answer_id,
+                                                    'answer_body', answer_body,
+                                                    'answer_is_correct', answer_is_correct,
+                                                    'answer_description', answer_description
+                                            )
+                                               )
                             )
                                  )
             )

@@ -291,9 +291,18 @@ type HumanResourcesTestsQuestion struct {
 	ID        int32
 	TestID    int32
 	Body      string
-	IsCorrect bool
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+}
+
+type HumanResourcesTestsQuestionsAnswer struct {
+	ID          int32
+	QuestionID  int32
+	Body        string
+	Description string
+	IsCorrect   bool
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type HumanResourcesTestsUsersAttempt struct {

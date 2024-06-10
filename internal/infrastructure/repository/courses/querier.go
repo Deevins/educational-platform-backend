@@ -11,8 +11,10 @@ import (
 type Querier interface {
 	AddCourseBasicInfo(ctx context.Context, arg *AddCourseBasicInfoParams) (int32, error)
 	ApproveCourse(ctx context.Context, id int32) (int32, error)
+	CreateAnswer(ctx context.Context, arg *CreateAnswerParams) (int32, error)
 	CreateCourseBase(ctx context.Context, arg *CreateCourseBaseParams) (int32, error)
 	CreateLecture(ctx context.Context, arg *CreateLectureParams) (int32, error)
+	CreateQuestion(ctx context.Context, arg *CreateQuestionParams) (int32, error)
 	CreateSection(ctx context.Context, arg *CreateSectionParams) (int32, error)
 	CreateTest(ctx context.Context, arg *CreateTestParams) (int32, error)
 	GetAllDraftCourses(ctx context.Context) ([]*HumanResourcesCourse, error)

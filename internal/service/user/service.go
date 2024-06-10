@@ -6,6 +6,7 @@ import (
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/users"
 	"github.com/deevins/educational-platform-backend/internal/model"
+	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
@@ -17,9 +18,32 @@ type Service struct {
 	s3   S3.Client
 }
 
-func (s *Service) GetUserAvatarByFileID(ctx context.Context, fileID string) (*model.UserIDWithResourceLink, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *Service) CheckIfUserRegisteredToCourse(ctx context.Context, userID, courseID int32) (bool, error) {
+	_, err := s.repo.CheckIfUserRegisteredToCourse(ctx, &users.CheckIfUserRegisteredToCourseParams{
+		UserID:   userID,
+		CourseID: courseID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *Service) RegisterToCourse(ctx context.Context, userID, courseID int32) error {
+	_, err := s.repo.RegisterToCourse(ctx, &users.RegisterToCourseParams{
+		UserID:   userID,
+		CourseID: courseID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewService(repo users.Querier, s3Client S3.Client) *Service {

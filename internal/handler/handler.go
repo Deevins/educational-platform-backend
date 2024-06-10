@@ -21,7 +21,8 @@ type UserService interface {
 	UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) (string, error)
 	AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
 	UpdateUserInfo(ctx context.Context, user *model.UserUpdate) error
-	GetUserAvatarByFileID(ctx context.Context, fileID string) (*model.UserIDWithResourceLink, error)
+	CheckIfUserRegisteredToCourse(ctx context.Context, userID, courseID int32) (bool, error)
+	RegisterToCourse(ctx context.Context, userID, courseID int32) error
 }
 
 type ThreadService interface{}
@@ -65,8 +66,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue) // ok
 		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)                     // ok
 		user.PUT("/update-user-info", h.updateUserInfo)                                                // ok
-		user.POST("/update-avatar", h.updateAvatar)                                                    // OK
-		user.POST("/attend-to-course/:courseID", h.attendToCourse)
+		user.POST("/update-avatar", h.updateAvatar)
+		user.POST("/register-to-course/:courseID", h.registerToCourse)
+		user.GET("/check-if-user-registered-to-course/:courseID", h.checkIfUserRegisteredToCourse)
 	}
 	course := router.Group("/courses")
 	{
@@ -82,7 +84,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/send-to-check/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
-		course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
+		//course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
 		course.GET("/get-full-course/:courseID", h.getFullCoursePage) // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
 		course.POST("/upload-course-avatar/:courseID", h.uploadCourseAvatar)

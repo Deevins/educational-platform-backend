@@ -32,6 +32,27 @@ func (q *Queries) AddTeachingExperience(ctx context.Context, arg *AddTeachingExp
 	return id, err
 }
 
+const checkIfUserRegisteredToCourse = `-- name: CheckIfUserRegisteredToCourse :one
+SELECT course_id, user_id, created_at, updated_at from human_resources.courses_attendants WHERE user_id = $1 AND course_id = $2
+`
+
+type CheckIfUserRegisteredToCourseParams struct {
+	UserID   int32
+	CourseID int32
+}
+
+func (q *Queries) CheckIfUserRegisteredToCourse(ctx context.Context, arg *CheckIfUserRegisteredToCourseParams) (*HumanResourcesCoursesAttendant, error) {
+	row := q.db.QueryRow(ctx, checkIfUserRegisteredToCourse, arg.UserID, arg.CourseID)
+	var i HumanResourcesCoursesAttendant
+	err := row.Scan(
+		&i.CourseID,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO human_resources.users (full_name, email,description, password_hashed, phone_number) VALUES ($1, $2, $3, $4, $5) RETURNING id
 `
@@ -162,6 +183,22 @@ func (q *Queries) GetUsers(ctx context.Context) ([]*HumanResourcesUser, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const registerToCourse = `-- name: RegisterToCourse :one
+INSERT INTO human_resources.courses_attendants (user_id, course_id) VALUES ($1, $2) ON CONFLICT do nothing RETURNING user_id
+`
+
+type RegisterToCourseParams struct {
+	UserID   int32
+	CourseID int32
+}
+
+func (q *Queries) RegisterToCourse(ctx context.Context, arg *RegisterToCourseParams) (int32, error) {
+	row := q.db.QueryRow(ctx, registerToCourse, arg.UserID, arg.CourseID)
+	var user_id int32
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
 const updateAvatar = `-- name: UpdateAvatar :one

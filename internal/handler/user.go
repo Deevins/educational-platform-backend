@@ -180,6 +180,53 @@ func (h *Handler) updateUserInfo(ctx *gin.Context) {
 	}
 }
 
-func (h *Handler) attendToCourse(ctx *gin.Context) {
+type RegisterToCourseRequest struct {
+	UserID   int32 `json:"user_id"`
+	CourseID int32 `json:"course_id"`
+}
+
+func (h *Handler) registerToCourse(ctx *gin.Context) {
+	var input *RegisterToCourseRequest
+
+	if err := ctx.BindJSON(&input); err != nil {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.us.RegisterToCourse(ctx, input.UserID, input.CourseID)
+	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"message": "User registered to course",
+	})
+}
+
+type CheckIfUserRegisteredToCourseRequest struct {
+	UserID   int32 `json:"user_id"`
+	CourseID int32 `json:"course_id"`
+}
+
+func (h *Handler) checkIfUserRegisteredToCourse(ctx *gin.Context) {
+	var input *CheckIfUserRegisteredToCourseRequest
+
+	if err := ctx.BindJSON(&input); err != nil {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	isRegistered, err := h.us.CheckIfUserRegisteredToCourse(ctx, input.UserID, input.CourseID)
+
+	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"message":       "User registered to course",
+		"is_registered": isRegistered,
+	})
 
 }

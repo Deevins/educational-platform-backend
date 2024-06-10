@@ -125,8 +125,29 @@ func (s *Service) CreateCourseLecture(ctx context.Context, sectionID int32, lect
 }
 
 func (s *Service) AddQuestionsToTest(ctx context.Context, testID int32, questions []*model.Question) (int32, error) {
-	//TODO implement me
-	panic("implement me")
+	for _, question := range questions {
+		questionID, err := s.repo.CreateQuestion(ctx, &courses.CreateQuestionParams{
+			TestID: testID,
+			Body:   question.QuestionBody,
+		})
+		if err != nil {
+			return 0, err
+		}
+
+		for _, answer := range question.Answers {
+			_, err = s.repo.CreateAnswer(ctx, &courses.CreateAnswerParams{
+				Description: answer.Description,
+				QuestionID:  questionID,
+				Body:        answer.ResponseText,
+				IsCorrect:   answer.IsCorrect,
+			})
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return testID, nil
 }
 
 func NewService(repo courses.Querier, s3Client S3.Client) *Service {

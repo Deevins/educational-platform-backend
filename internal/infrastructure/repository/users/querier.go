@@ -10,11 +10,13 @@ import (
 
 type Querier interface {
 	AddTeachingExperience(ctx context.Context, arg *AddTeachingExperienceParams) (int32, error)
+	CheckIfUserRegisteredToCourse(ctx context.Context, arg *CheckIfUserRegisteredToCourseParams) (*HumanResourcesCoursesAttendant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (int32, error)
 	GetHasUserTriedInstructor(ctx context.Context, id int32) (*bool, error)
 	GetUserByEmailAndHashedPassword(ctx context.Context, arg *GetUserByEmailAndHashedPasswordParams) (*HumanResourcesUser, error)
 	GetUserByID(ctx context.Context, id int32) (*HumanResourcesUser, error)
 	GetUsers(ctx context.Context) ([]*HumanResourcesUser, error)
+	RegisterToCourse(ctx context.Context, arg *RegisterToCourseParams) (int32, error)
 	UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) (int32, error)
 	UpdateHasUserTriedInstructor(ctx context.Context, id int32) (int32, error)
 	UpdateUserDescription(ctx context.Context, arg *UpdateUserDescriptionParams) (int32, error)
