@@ -116,3 +116,21 @@ func initConfig() error {
 
 	return viper.ReadInConfig()
 }
+
+//ENV=development
+//DB_HOST=localhost
+//DB_PORT=5432
+//DB_USER=Shili
+//DB_PASSWORD=postgres
+//DB_DBNAME=pg
+//DB_SSL=disable
+//SIGNING_KEY=sdfasddsfsdfsdfsdfsd
+//SALT=sdfsdfrdff$#@Q#$sdfsdfd12312sadsdfsdf
+//
+//
+//MINIO_ENDPOINT=localhost:9000
+//MINIO_ROOT_USER=root
+//MINIO_ROOT_PASSWORD=zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+//MINIO_BUCKET_NAME=test-bucket
+//MINIO_USE_SSL=false
+//FILE_TIME_EXPIRATION=24 # в часах
