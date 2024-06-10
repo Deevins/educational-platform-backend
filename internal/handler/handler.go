@@ -61,14 +61,14 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	user := router.Group("/users")
 	{
-		user.GET("/get-one", h.getOneUser)
+		user.GET("/get-one/:userID", h.getOneUser)
 		user.GET("/has-user-tried-instructor/:userID", h.hasUserTriedInstructor)                       // ok
 		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue) // ok
 		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)                     // ok
 		user.PUT("/update-user-info", h.updateUserInfo)                                                // ok
 		user.POST("/update-avatar", h.updateAvatar)
 		user.POST("/register-to-course/:courseID", h.registerToCourse)
-		user.GET("/check-if-user-registered-to-course/:courseID", h.checkIfUserRegisteredToCourse)
+		user.GET("/check-if-user-registered-to-course", h.checkIfUserRegisteredToCourse)
 	}
 	course := router.Group("/courses")
 	{
@@ -78,7 +78,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.GET("/get-latest-eight", h.getLatestEightCourses)                                     // OK
 		course.POST("/create-base/:courseID", h.createCourseBase)                                    // OK type must be 'course' or 'practice'
 		course.DELETE("/delete/:courseID", h.deleteCourse)                                           // OK
-		course.GET("/search-courses-by-title", h.searchCoursesByTitle)                               // OK
+		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle)                        // OK
 		course.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
 		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
 		course.POST("/send-to-check/:courseID", h.sendToCheck)

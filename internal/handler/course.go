@@ -130,19 +130,15 @@ func (h *Handler) deleteCourse(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "course deleted"})
 }
 
-type SearchBase struct {
-	Query string `json:"query"`
-}
-
 func (h *Handler) searchCoursesByTitle(ctx *gin.Context) {
-	var input *SearchBase
-
-	if err := ctx.BindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if ctx.Param("query") == "" {
+		ctx.JSON(400, gin.H{"error": "query is empty"})
 		return
 	}
 
-	courses, err := h.cs.SearchCoursesByTitle(ctx, input.Query)
+	query := ctx.Param("query")
+
+	courses, err := h.cs.SearchCoursesByTitle(ctx, query)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return

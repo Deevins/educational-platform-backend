@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
 	"github.com/deevins/educational-platform-backend/pkg/httpResponses"
@@ -16,25 +17,23 @@ type GetOneUserInfoRequest struct {
 }
 
 func (h *Handler) getOneUser(ctx *gin.Context) {
-	var input GetOneUserInfoRequest // id
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+	if ctx.Param("userID") == "" {
+		ctx.JSON(400, gin.H{"error": "userID is empty"})
 		return
 	}
-	user, err := h.us.GetByID(ctx, input.ID)
+
+	userID, err := strconv.ParseInt(ctx.Param("userID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "userID is not a number"})
+		return
+	}
+
+	user, err := h.us.GetByID(ctx, int32(userID))
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"id":           user.ID,
-		"full_name":    user.FullName,
-		"description":  user.Description,
-		"email":        user.Email,
-		"avatar_url":   user.AvatarUrl,
-		"phone_number": user.PhoneNumber,
-	})
+	ctx.JSON(http.StatusOK, user)
 
 }
 
@@ -210,6 +209,10 @@ type CheckIfUserRegisteredToCourseRequest struct {
 }
 
 func (h *Handler) checkIfUserRegisteredToCourse(ctx *gin.Context) {
+	value := ctx.Params.ByName("user_id")
+	value2 := ctx.Params.ByName("courseID")
+
+	fmt.Println(value2, value)
 	var input *CheckIfUserRegisteredToCourseRequest
 
 	if err := ctx.BindJSON(&input); err != nil {
