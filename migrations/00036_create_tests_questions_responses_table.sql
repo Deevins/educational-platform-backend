@@ -1,11 +1,10 @@
 -- +goose NO TRANSACTION
 -- +goose Up
-CREATE TABLE IF NOT EXISTS human_resources.sections (
+CREATE TABLE IF NOT EXISTS human_resources.tests_questions (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    course_id INT NOT NULL,
-    serial_number INT NOT NULL,
+    test_id INT NOT NULL,
+    body TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );

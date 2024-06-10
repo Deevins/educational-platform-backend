@@ -83,3 +83,23 @@ func (q *Queries) GetLanguages(ctx context.Context) ([]*GetLanguagesRow, error) 
 	}
 	return items, nil
 }
+
+const getMetasCount = `-- name: GetMetasCount :one
+SELECT
+    (SELECT COUNT(*) FROM human_resources.users) AS usersCount,
+    (SELECT COUNT(*) FROM human_resources.users WHERE has_user_tried_instructor = false) AS studentsCount,
+    (SELECT COUNT(*) FROM human_resources.courses) AS coursesCount
+`
+
+type GetMetasCountRow struct {
+	Userscount    int64
+	Studentscount int64
+	Coursescount  int64
+}
+
+func (q *Queries) GetMetasCount(ctx context.Context) (*GetMetasCountRow, error) {
+	row := q.db.QueryRow(ctx, getMetasCount)
+	var i GetMetasCountRow
+	err := row.Scan(&i.Userscount, &i.Studentscount, &i.Coursescount)
+	return &i, err
+}

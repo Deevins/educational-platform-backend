@@ -98,3 +98,9 @@ type CourseSection struct {
 	Lectures           []*Lecture `json:"lectures"`
 	Tests              []*Test    `json:"tests"`
 }
+
+type SectionCreation struct {
+	Title        string `json:"title"`
+	SerialNumber int32  `json:"serial_number"`
+	Description  string `json:"description"`
+}

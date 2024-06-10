@@ -210,8 +210,8 @@ type HumanResourcesForumThreadsMessage struct {
 type HumanResourcesInstructorsInfo struct {
 	ID                    int32
 	UserID                int32
-	HasPreviousExperience bool
-	HasVideoKnowledge     bool
+	HasPreviousExperience string
+	HasVideoKnowledge     string
 	CurrentAudience       string
 	CreatedAt             pgtype.Timestamptz
 	UpdatedAt             pgtype.Timestamptz
@@ -234,13 +234,14 @@ type HumanResourcesLastCourseItemsVisitedByUser struct {
 }
 
 type HumanResourcesLecture struct {
-	ID          int32
-	Title       string
-	Description string
-	SectionID   int32
-	VideoUrl    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID           int32
+	Title        string
+	Description  string
+	SectionID    int32
+	SerialNumber int32
+	VideoUrl     string
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
 }
 
 type HumanResourcesNotification struct {
@@ -252,12 +253,13 @@ type HumanResourcesNotification struct {
 }
 
 type HumanResourcesSection struct {
-	ID          int32
-	Title       string
-	Description string
-	CourseID    int32
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID           int32
+	Title        string
+	Description  string
+	CourseID     int32
+	SerialNumber int32
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
 }
 
 type HumanResourcesSkillLevel struct {
@@ -276,11 +278,13 @@ type HumanResourcesSubcategory struct {
 }
 
 type HumanResourcesTest struct {
-	ID        int32
-	Name      string
-	SectionID int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID           int32
+	Name         string
+	SectionID    int32
+	SerialNumber int32
+	Description  string
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
 }
 
 type HumanResourcesTestsQuestion struct {

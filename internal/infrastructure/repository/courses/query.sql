@@ -83,15 +83,7 @@ UPDATE human_resources.courses SET avatar_url = @avatar_url WHERE id = @id RETUR
 UPDATE human_resources.courses SET preview_video_url = @preview_video_url, updated_at = now() WHERE id = @id RETURNING preview_video_url;
 
 -- name: CreateSection :one
-INSERT INTO human_resources.sections (title, description, course_id) VALUES (@title, @description, @course_id) RETURNING id;
-
-
--- name: GetCourseSections :many
-SELECT s.id, s.title, s.description FROM human_resources.sections s
-                    INNER JOIN human_resources.courses cs ON s.course_id = cs.id
-WHERE cs.id = @course_id
-ORDER BY
-    s.created_at DESC;
+INSERT INTO human_resources.sections (title, description, course_id, serial_number) VALUES (@title, @description, @course_id, @serial_number) RETURNING id;
 
 -- name: RemoveSection :one
 DELETE FROM human_resources.sections WHERE id = @id RETURNING id;
@@ -99,17 +91,26 @@ DELETE FROM human_resources.sections WHERE id = @id RETURNING id;
 -- name: UpdateSectionTitle :one
 UPDATE human_resources.sections SET title = @title WHERE id = @id RETURNING id;
 
--- name: InsertLectureTitleAndDescription :one
-UPDATE human_resources.lectures SET title = @title, description = @description WHERE id = @id RETURNING id;
+-- name: CreateLecture :one
+INSERT INTO human_resources.lectures (title, description, section_id, serial_number) VALUES (@title, @description, @section_id, @serial_number) RETURNING id;
 
--- name: InsertLectureVideoUrl :one
+-- name: CreateTest :one
+INSERT INTO human_resources.tests (name,description, section_id, serial_number) VALUES (@name,@description, @section_id, @serial_number) RETURNING id;
+
+-- name: UpdateLectureVideoUrl :one
 UPDATE human_resources.lectures SET video_url = @video_url WHERE id = @id RETURNING id;
 
 -- name: UpdateLectureTitle :one
-UPDATE human_resources.lectures SET title = @title WHERE id = @id RETURNING id;
+UPDATE human_resources.lectures SET title = @title WHERE section_id = @section_id AND id = @id RETURNING id;
+
+-- name: UpdateTestTitle :one
+UPDATE human_resources.tests SET name = @name WHERE section_id = @section_id AND id = @id RETURNING id;
 
 -- name: RemoveLecture :one
 DELETE FROM human_resources.lectures WHERE id = @id AND section_id = @section_id RETURNING id;
+
+-- name: RemoveTest :one
+DELETE FROM human_resources.tests WHERE id = @id AND section_id = @section_id RETURNING id;
 
 -- name: GetInstructorCourses :many
 SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c WHERE author_id = @author_id ORDER BY created_at DESC;
@@ -150,7 +151,8 @@ WITH recursive_section AS (
         t.id AS test_id,
         t.name AS test_name,
         q.id AS question_id,
-        q.body AS question_body
+        q.body AS question_body,
+        q.is_correct AS question_is_correct
     FROM
         human_resources.sections s
             LEFT JOIN
@@ -181,7 +183,8 @@ SELECT
                     'questions', json_agg(
                             json_build_object(
                                     'question_id', question_id,
-                                    'question_body', question_body
+                                    'question_body', question_body,
+                                    'question_is_correct', question_is_correct
                             )
                                  )
             )

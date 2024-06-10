@@ -1,8 +1,15 @@
 package model
 
 type Lecture struct {
-	LectureID          int32  `json:"lecture_id"`
-	LectureTitle       string `json:"lecture_title"`
-	LectureDescription string `json:"lecture_description"`
-	LectureVideoURL    string `json:"lecture_video_url"`
+	ID           int32  `json:"id"`
+	Title        string `json:"title"`
+	SerialNumber int32  `json:"serial_number"`
+	Description  string `json:"description"`
+	VideoURL     string `json:"video_url"`
+}
+
+type CreateLectureBase struct {
+	Title        string `json:"title"`
+	SerialNumber int32  `json:"serial_number"`
+	Description  string `json:"description"`
 }

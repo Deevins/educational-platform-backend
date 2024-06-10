@@ -7,7 +7,7 @@ CREATE TABLE human_resources.courses (
     title VARCHAR(255) NOT NULL,
     subtitle VARCHAR(255) default '',
     description TEXT NOT NULL default '',
-    avatar_url VARCHAR(255) default '',
+    avatar_url TEXT default '',
     students_count INT DEFAULT 0,
     ratings_count INT DEFAULT 0,
     rating FLOAT DEFAULT 0,

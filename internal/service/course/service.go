@@ -17,6 +17,118 @@ type Service struct {
 	s3   S3.Client
 }
 
+func (s *Service) UpdateTestTitle(ctx context.Context, testID int32, title string) (string, error) {
+	_, err := s.repo.UpdateTestTitle(ctx, &courses.UpdateTestTitleParams{
+		ID:   testID,
+		Name: title,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return title, nil
+}
+
+func (s *Service) UpdateLectureTitle(ctx context.Context, lectureID int32, title string) (string, error) {
+	_, err := s.repo.UpdateLectureTitle(ctx, &courses.UpdateLectureTitleParams{
+		ID:    lectureID,
+		Title: title,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return title, nil
+}
+
+func (s *Service) UpdateSectionTitle(ctx context.Context, sectionID int32, title string) (string, error) {
+	_, err := s.repo.UpdateSectionTitle(ctx, &courses.UpdateSectionTitleParams{
+		ID:    sectionID,
+		Title: title,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return title, nil
+}
+
+func (s *Service) RemoveLectureByID(ctx context.Context, lectureID int32) error {
+	_, err := s.repo.RemoveLecture(ctx, &courses.RemoveLectureParams{
+		ID: lectureID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) RemoveTestByID(ctx context.Context, testID int32) error {
+	_, err := s.repo.RemoveTest(ctx, &courses.RemoveTestParams{
+		ID: testID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) RemoveSectionByID(ctx context.Context, sectionID int32) error {
+	_, err := s.repo.RemoveSection(ctx, sectionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) CreateSection(ctx context.Context, courseID int32, input *model.SectionCreation) (int32, error) {
+	sectionID, err := s.repo.CreateSection(ctx, &courses.CreateSectionParams{
+		CourseID:     courseID,
+		Title:        input.Title,
+		Description:  input.Description,
+		SerialNumber: input.SerialNumber,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return sectionID, nil
+}
+
+func (s *Service) CreateCourseTest(ctx context.Context, sectionID int32, test *model.CreateTestBase) (int32, error) {
+	id, err := s.repo.CreateTest(ctx, &courses.CreateTestParams{
+		SectionID:    sectionID,
+		Name:         test.Title,
+		SerialNumber: test.SerialNumber,
+		Description:  test.Description,
+	})
+	if err != nil {
+		return 0, err
+
+	}
+	return id, nil
+}
+
+func (s *Service) CreateCourseLecture(ctx context.Context, sectionID int32, lecture *model.CreateLectureBase) (int32, error) {
+	id, err := s.repo.CreateLecture(ctx, &courses.CreateLectureParams{
+		SectionID:    sectionID,
+		Title:        lecture.Title,
+		SerialNumber: lecture.SerialNumber,
+		Description:  lecture.Description,
+	})
+	if err != nil {
+		return 0, err
+
+	}
+	return id, nil
+}
+
+func (s *Service) AddQuestionsToTest(ctx context.Context, testID int32, questions []*model.Question) (int32, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewService(repo courses.Querier, s3Client S3.Client) *Service {
 	return &Service{
 		repo: repo,
@@ -223,7 +335,7 @@ func (s *Service) UploadCourseLecture(ctx context.Context, lectureID int32, lect
 		return "", err
 	}
 
-	_, err = s.repo.InsertLectureVideoUrl(ctx, &courses.InsertLectureVideoUrlParams{
+	_, err = s.repo.UpdateLectureVideoUrl(ctx, &courses.UpdateLectureVideoUrlParams{
 		VideoUrl: url,
 		ID:       lectureID,
 	})

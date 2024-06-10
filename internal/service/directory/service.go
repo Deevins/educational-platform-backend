@@ -22,6 +22,19 @@ type Service struct {
 	repo directories.Querier
 }
 
+func (s *Service) GetMetasCount(ctx context.Context) (*model.MetasCount, error) {
+	counts, err := s.repo.GetMetasCount(ctx)
+	if err != nil {
+		return &model.MetasCount{}, errors.Wrap(err, "failed to get users count")
+	}
+
+	return &model.MetasCount{
+		RegistrationsCount: int32(counts.Userscount),
+		CoursesCount:       int32(counts.Coursescount),
+		StudentsCount:      int32(counts.Studentscount),
+	}, nil
+}
+
 func (s *Service) GetLanguages(ctx context.Context) ([]*model.Language, error) {
 	languages, err := s.repo.GetLanguages(ctx)
 	if err != nil {

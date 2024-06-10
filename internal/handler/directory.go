@@ -22,6 +22,14 @@ func (h *Handler) getLanguages(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, languages)
 }
+func (h *Handler) getMetasCount(ctx *gin.Context) {
+	metasCount, err := h.ds.GetMetasCount(ctx)
+	if err != nil {
+		return
+	}
+
+	ctx.JSON(http.StatusOK, metasCount)
+}
 
 func (h *Handler) filterByCategoryAndSubcategory(ctx *gin.Context) {
 }

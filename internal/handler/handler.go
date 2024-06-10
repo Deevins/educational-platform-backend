@@ -29,6 +29,7 @@ type ThreadService interface{}
 type DirectoryService interface {
 	GetCategoriesWithSubCategories(ctx context.Context) ([]*model.Category, error)
 	GetLanguages(ctx context.Context) ([]*model.Language, error)
+	GetMetasCount(ctx context.Context) (*model.MetasCount, error)
 }
 
 type Handler struct {
@@ -60,11 +61,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	user := router.Group("/users")
 	{
 		user.GET("/get-one", h.getOneUser)
-		user.GET("/has-user-tried-instructor", h.hasUserTriedInstructor)                       // ok
-		user.POST("/set-has-user-tried-instructor-to-true", h.setHasUserTriedInstructorToTrue) // ok
-		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)             // ok
-		user.PUT("/update-user-info", h.updateUserInfo)                                        // ok
-		user.POST("/update-avatar", h.updateAvatar)                                            // OK
+		user.GET("/has-user-tried-instructor/:userID", h.hasUserTriedInstructor)                       // ok
+		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue) // ok
+		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)                     // ok
+		user.PUT("/update-user-info", h.updateUserInfo)                                                // ok
+		user.POST("/update-avatar", h.updateAvatar)                                                    // OK
+		user.POST("/attend-to-course/:courseID", h.attendToCourse)
 	}
 	course := router.Group("/courses")
 	{
@@ -83,11 +85,28 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
 		course.GET("/get-full-course/:courseID", h.getFullCoursePage) // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
+		course.POST("/upload-course-avatar/:courseID", h.uploadCourseAvatar)
+		course.POST("/upload-course-preview-video/:courseID", h.uploadCoursePreviewVideo)
+		course.GET("/get-course-materials/:courseID", h.getCourseMaterials)
+
+		course.POST("/create-section/:courseID", h.createSection)
+		course.POST("/create-lecture/:sectionID", h.createLecture)
+		course.POST("/create-test/:sectionID", h.createTest)
+		course.POST("/remove-section/:sectionID", h.removeSection)
+		course.POST("/remove-lecture/:lectureID", h.removeLecture)
+		course.POST("/remove-test/:testID", h.removeTest)
+		course.POST("/update-section-title/:sectionID", h.updateSectionTitle)
+		course.POST("/update-lecture-title/:lectureID", h.updateLectureTitle)
+		course.POST("/update-test-title/:testID", h.updateTestTitle)
+		course.POST("/add-questions-to-test/:testID", h.addQuestionsToTest)
+		course.POST("/update-lecture-video-url/:lectureID", h.uploadLectureVideo)
+
 	}
 	directories := router.Group("/directories")
 	{
 		directories.GET("/categories", h.getCategories)
 		directories.GET("/languages", h.getLanguages)
+		directories.GET("/meta-counts", h.getMetasCount)
 		//directories.GET("/filter-by-category-and-subcategory", h.filterByCategoryAndSubcategory)
 	}
 

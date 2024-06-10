@@ -15,9 +15,9 @@ INSERT INTO human_resources.instructors_info (user_id, has_video_knowledge, curr
 
 type AddTeachingExperienceParams struct {
 	UserID                int32
-	HasVideoKnowledge     bool
+	HasVideoKnowledge     string
 	CurrentAudience       string
-	HasPreviousExperience bool
+	HasPreviousExperience string
 }
 
 func (q *Queries) AddTeachingExperience(ctx context.Context, arg *AddTeachingExperienceParams) (int32, error) {

@@ -93,8 +93,8 @@ func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileData
 
 func (s *Service) AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {
 	_, err := s.repo.AddTeachingExperience(ctx, &users.AddTeachingExperienceParams{
-		HasVideoKnowledge:     exp.HasVideoKnowledge,
-		HasPreviousExperience: exp.HasPreviousExperience,
+		HasVideoKnowledge:     exp.VideoKnowledge,
+		HasPreviousExperience: exp.PreviousExperience,
 		CurrentAudience:       exp.CurrentAudienceCount,
 		UserID:                exp.UserID,
 	})

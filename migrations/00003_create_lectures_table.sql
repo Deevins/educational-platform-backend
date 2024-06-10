@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS human_resources.lectures (
     title VARCHAR(255) NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
     section_id INT NOT NULL,
-    video_url VARCHAR(255) NOT NULL DEFAULT '',
+    serial_number INT NOT NULL,
+    video_url TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );

@@ -43,14 +43,18 @@ type HasUserTriedInstructorRequest struct {
 }
 
 func (h *Handler) hasUserTriedInstructor(ctx *gin.Context) {
-	var input HasUserTriedInstructorRequest // id
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+	if ctx.Param("userID") == "" {
+		ctx.JSON(400, gin.H{"error": "userID is empty"})
 		return
 	}
 
-	hasUsed, err := h.us.GetHasUserTriedInstructor(ctx, input.ID)
+	userID, err := strconv.ParseInt(ctx.Param("userID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	hasUsed, err := h.us.GetHasUserTriedInstructor(ctx, int32(userID))
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -65,14 +69,18 @@ type SetHasUserTriedInstructorToTrueRequest struct {
 }
 
 func (h *Handler) setHasUserTriedInstructorToTrue(ctx *gin.Context) {
-	var input SetHasUserTriedInstructorToTrueRequest // id
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+	if ctx.Param("userID") == "" {
+		ctx.JSON(400, gin.H{"error": "userID is empty"})
 		return
 	}
 
-	err := h.us.SetHasUserTriedInstructorToTrue(ctx, input.ID)
+	userID, err := strconv.ParseInt(ctx.Param("userID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	err = h.us.SetHasUserTriedInstructorToTrue(ctx, int32(userID))
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -170,4 +178,8 @@ func (h *Handler) updateUserInfo(ctx *gin.Context) {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
+}
+
+func (h *Handler) attendToCourse(ctx *gin.Context) {
+
 }

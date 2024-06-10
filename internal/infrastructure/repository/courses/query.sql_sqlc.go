@@ -94,18 +94,70 @@ func (q *Queries) CreateCourseBase(ctx context.Context, arg *CreateCourseBasePar
 	return id, err
 }
 
+const createLecture = `-- name: CreateLecture :one
+INSERT INTO human_resources.lectures (title, description, section_id, serial_number) VALUES ($1, $2, $3, $4) RETURNING id
+`
+
+type CreateLectureParams struct {
+	Title        string
+	Description  string
+	SectionID    int32
+	SerialNumber int32
+}
+
+func (q *Queries) CreateLecture(ctx context.Context, arg *CreateLectureParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createLecture,
+		arg.Title,
+		arg.Description,
+		arg.SectionID,
+		arg.SerialNumber,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createSection = `-- name: CreateSection :one
-INSERT INTO human_resources.sections (title, description, course_id) VALUES ($1, $2, $3) RETURNING id
+INSERT INTO human_resources.sections (title, description, course_id, serial_number) VALUES ($1, $2, $3, $4) RETURNING id
 `
 
 type CreateSectionParams struct {
-	Title       string
-	Description string
-	CourseID    int32
+	Title        string
+	Description  string
+	CourseID     int32
+	SerialNumber int32
 }
 
 func (q *Queries) CreateSection(ctx context.Context, arg *CreateSectionParams) (int32, error) {
-	row := q.db.QueryRow(ctx, createSection, arg.Title, arg.Description, arg.CourseID)
+	row := q.db.QueryRow(ctx, createSection,
+		arg.Title,
+		arg.Description,
+		arg.CourseID,
+		arg.SerialNumber,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createTest = `-- name: CreateTest :one
+INSERT INTO human_resources.tests (name,description, section_id, serial_number) VALUES ($1,$2, $3, $4) RETURNING id
+`
+
+type CreateTestParams struct {
+	Name         string
+	Description  string
+	SectionID    int32
+	SerialNumber int32
+}
+
+func (q *Queries) CreateTest(ctx context.Context, arg *CreateTestParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createTest,
+		arg.Name,
+		arg.Description,
+		arg.SectionID,
+		arg.SerialNumber,
+	)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
@@ -292,40 +344,6 @@ func (q *Queries) GetCoursePreviewVideoByID(ctx context.Context, id int32) (*str
 	return preview_video_url, err
 }
 
-const getCourseSections = `-- name: GetCourseSections :many
-SELECT s.id, s.title, s.description FROM human_resources.sections s
-                    INNER JOIN human_resources.courses cs ON s.course_id = cs.id
-WHERE cs.id = $1
-ORDER BY
-    s.created_at DESC
-`
-
-type GetCourseSectionsRow struct {
-	ID          int32
-	Title       string
-	Description string
-}
-
-func (q *Queries) GetCourseSections(ctx context.Context, courseID int32) ([]*GetCourseSectionsRow, error) {
-	rows, err := q.db.Query(ctx, getCourseSections, courseID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*GetCourseSectionsRow
-	for rows.Next() {
-		var i GetCourseSectionsRow
-		if err := rows.Scan(&i.ID, &i.Title, &i.Description); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getCoursesAvatarsByIDs = `-- name: GetCoursesAvatarsByIDs :many
 SELECT id, avatar_url FROM human_resources.courses WHERE id = ANY($1::int[])
 `
@@ -484,7 +502,8 @@ WITH recursive_section AS (
         t.id AS test_id,
         t.name AS test_name,
         q.id AS question_id,
-        q.body AS question_body
+        q.body AS question_body,
+        q.is_correct AS question_is_correct
     FROM
         human_resources.sections s
             LEFT JOIN
@@ -515,7 +534,8 @@ SELECT
                     'questions', json_agg(
                             json_build_object(
                                     'question_id', question_id,
-                                    'question_body', question_body
+                                    'question_body', question_body,
+                                    'question_is_correct', question_is_correct
                             )
                                  )
             )
@@ -616,39 +636,6 @@ func (q *Queries) GetUserCourses(ctx context.Context, userID int32) ([]*GetUserC
 	return items, nil
 }
 
-const insertLectureTitleAndDescription = `-- name: InsertLectureTitleAndDescription :one
-UPDATE human_resources.lectures SET title = $1, description = $2 WHERE id = $3 RETURNING id
-`
-
-type InsertLectureTitleAndDescriptionParams struct {
-	Title       string
-	Description string
-	ID          int32
-}
-
-func (q *Queries) InsertLectureTitleAndDescription(ctx context.Context, arg *InsertLectureTitleAndDescriptionParams) (int32, error) {
-	row := q.db.QueryRow(ctx, insertLectureTitleAndDescription, arg.Title, arg.Description, arg.ID)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
-const insertLectureVideoUrl = `-- name: InsertLectureVideoUrl :one
-UPDATE human_resources.lectures SET video_url = $1 WHERE id = $2 RETURNING id
-`
-
-type InsertLectureVideoUrlParams struct {
-	VideoUrl string
-	ID       int32
-}
-
-func (q *Queries) InsertLectureVideoUrl(ctx context.Context, arg *InsertLectureVideoUrlParams) (int32, error) {
-	row := q.db.QueryRow(ctx, insertLectureVideoUrl, arg.VideoUrl, arg.ID)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
 const rejectCourse = `-- name: RejectCourse :one
 UPDATE human_resources.courses SET status = 'DRAFT', updated_at = now()  WHERE id = $1 RETURNING id
 `
@@ -691,6 +678,22 @@ DELETE FROM human_resources.sections WHERE id = $1 RETURNING id
 
 func (q *Queries) RemoveSection(ctx context.Context, id int32) (int32, error) {
 	row := q.db.QueryRow(ctx, removeSection, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
+const removeTest = `-- name: RemoveTest :one
+DELETE FROM human_resources.tests WHERE id = $1 AND section_id = $2 RETURNING id
+`
+
+type RemoveTestParams struct {
+	ID        int32
+	SectionID int32
+}
+
+func (q *Queries) RemoveTest(ctx context.Context, arg *RemoveTestParams) (int32, error) {
+	row := q.db.QueryRow(ctx, removeTest, arg.ID, arg.SectionID)
+	var id int32
 	err := row.Scan(&id)
 	return id, err
 }
@@ -844,16 +847,33 @@ func (q *Queries) UpdateCoursePreviewVideo(ctx context.Context, arg *UpdateCours
 }
 
 const updateLectureTitle = `-- name: UpdateLectureTitle :one
-UPDATE human_resources.lectures SET title = $1 WHERE id = $2 RETURNING id
+UPDATE human_resources.lectures SET title = $1 WHERE section_id = $2 AND id = $3 RETURNING id
 `
 
 type UpdateLectureTitleParams struct {
-	Title string
-	ID    int32
+	Title     string
+	SectionID int32
+	ID        int32
 }
 
 func (q *Queries) UpdateLectureTitle(ctx context.Context, arg *UpdateLectureTitleParams) (int32, error) {
-	row := q.db.QueryRow(ctx, updateLectureTitle, arg.Title, arg.ID)
+	row := q.db.QueryRow(ctx, updateLectureTitle, arg.Title, arg.SectionID, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateLectureVideoUrl = `-- name: UpdateLectureVideoUrl :one
+UPDATE human_resources.lectures SET video_url = $1 WHERE id = $2 RETURNING id
+`
+
+type UpdateLectureVideoUrlParams struct {
+	VideoUrl string
+	ID       int32
+}
+
+func (q *Queries) UpdateLectureVideoUrl(ctx context.Context, arg *UpdateLectureVideoUrlParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateLectureVideoUrl, arg.VideoUrl, arg.ID)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
@@ -870,6 +890,23 @@ type UpdateSectionTitleParams struct {
 
 func (q *Queries) UpdateSectionTitle(ctx context.Context, arg *UpdateSectionTitleParams) (int32, error) {
 	row := q.db.QueryRow(ctx, updateSectionTitle, arg.Title, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateTestTitle = `-- name: UpdateTestTitle :one
+UPDATE human_resources.tests SET name = $1 WHERE section_id = $2 AND id = $3 RETURNING id
+`
+
+type UpdateTestTitleParams struct {
+	Name      string
+	SectionID int32
+	ID        int32
+}
+
+func (q *Queries) UpdateTestTitle(ctx context.Context, arg *UpdateTestTitleParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateTestTitle, arg.Name, arg.SectionID, arg.ID)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
