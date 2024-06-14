@@ -180,11 +180,11 @@ func (h *Handler) updateUserInfo(ctx *gin.Context) {
 }
 
 type RegisterToCourseRequest struct {
-	UserID   int32 `json:"user_id"`
-	CourseID int32 `json:"course_id"`
+	UserID   int32  `json:"userID"`
+	CourseID string `json:"courseID"`
 }
 
-func (h *Handler) registerToCourse(ctx *gin.Context) {
+func (h *Handler) registerOnCourse(ctx *gin.Context) {
 	var input *RegisterToCourseRequest
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -192,7 +192,9 @@ func (h *Handler) registerToCourse(ctx *gin.Context) {
 		return
 	}
 
-	err := h.us.RegisterToCourse(ctx, input.UserID, input.CourseID)
+	courseIDI, _ := strconv.Atoi(input.CourseID)
+
+	err := h.us.RegisterToCourse(ctx, input.UserID, int32(courseIDI))
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -203,25 +205,28 @@ func (h *Handler) registerToCourse(ctx *gin.Context) {
 	})
 }
 
-type CheckIfUserRegisteredToCourseRequest struct {
-	UserID   int32 `json:"user_id"`
-	CourseID int32 `json:"course_id"`
-}
-
 func (h *Handler) checkIfUserRegisteredToCourse(ctx *gin.Context) {
-	value := ctx.Params.ByName("user_id")
-	value2 := ctx.Params.ByName("courseID")
+	userID := ctx.Query("userID")
+	courseID := ctx.Query("courseID")
 
-	fmt.Println(value2, value)
-	var input *CheckIfUserRegisteredToCourseRequest
-
-	if err := ctx.BindJSON(&input); err != nil {
-		model.NewErrorResponse(ctx, http.StatusBadRequest, err.Error())
+	if userID == "" || courseID == "" {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("userID and courseID are required"))
 		return
 	}
 
-	isRegistered, err := h.us.CheckIfUserRegisteredToCourse(ctx, input.UserID, input.CourseID)
+	userIDInt, err := strconv.Atoi(userID)
+	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("userID must be a number"))
+		return
+	}
 
+	courseIDInt, err := strconv.Atoi(courseID)
+	if err != nil {
+		model.NewErrorResponse(ctx, http.StatusBadRequest, fmt.Sprintf("courseID must be a number"))
+		return
+	}
+
+	isRegistered, err := h.us.CheckIfUserRegisteredToCourse(ctx, int32(userIDInt), int32(courseIDInt))
 	if err != nil {
 		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return

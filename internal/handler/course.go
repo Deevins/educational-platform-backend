@@ -73,7 +73,12 @@ func (h *Handler) getFullCoursePage(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, course)
 }
 
-func (h *Handler) getAllCourses(ctx *gin.Context) {
+func (h *Handler) getAllCoursesWithFilters(ctx *gin.Context) {
+	selectedDuration := ctx.Query("duration")
+	selectedRating := ctx.Query("rating")
+	selectedLevel := ctx.Query("level")
+	fmt.Println(selectedDuration, selectedRating, selectedLevel)
+
 	courses, err := h.cs.GetAllReadyCourses(ctx)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})

@@ -31,7 +31,7 @@ SELECT c.id, c.title, c.description,
        c.avatar_url, c.subtitle,
        c.rating, c.students_count,
        c.ratings_count,
-       c.lectures_length FROM human_resources.courses c
+       c.lectures_length_interval FROM human_resources.courses c
                     INNER JOIN human_resources.courses_attendants uc ON c.id = uc.course_id
 WHERE uc.user_id = @user_id
   AND c.status != 'DRAFT'
@@ -39,24 +39,134 @@ WHERE uc.user_id = @user_id
 ORDER BY
     c.created_at;
 
+
 -- name: GetAllReadyCourses :many
-SELECT * FROM human_resources.courses c
-WHERE c.status != 'DRAFT'
-  AND c.status != 'PENDING'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.level,
+    c.lectures_count,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'PENDING'
+  AND c.status != 'DRAFT'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.level,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.lectures_count,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at;
 
+
 -- name: GetAllPendingCourses :many
-SELECT *  FROM human_resources.courses c
-WHERE c.status != 'DRAFT'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.level,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.lectures_count,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'DRAFT'
   AND c.status != 'READY'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.lectures_count,
+    c.level,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at;
 
 -- name: GetAllDraftCourses :many
-SELECT * FROM human_resources.courses c
-WHERE c.status != 'PENDING'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.lectures_count,
+    c.level,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'PENDING'
   AND c.status != 'READY'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.level,
+    c.lectures_count,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at;
 
@@ -124,17 +234,57 @@ WHERE to_tsvector('russian', c.title) @@ plainto_tsquery('russian', @title)
 DELETE FROM human_resources.courses WHERE id = @id RETURNING id;
 
 -- name: GetFullCourseInfoWithInstructorByCourseID :one
-SELECT c.id as course_id, c.title, c.subtitle,
-       c.description, c.language, c.level, u.description as instructor_description,
-       c.rating, c.students_count, c.ratings_count, c.lectures_count,
-       c.lectures_length, c.avatar_url as course_avatar_url, c.preview_video_url,
-       c.status as course_status, c.created_at as course_created_at, c.course_goals, c.requirements,
-       c.target_audience, c.author_id, cg.name as category_title, u.full_name as instructor_full_name,
-       u.students_count as instructor_students_count, u.courses_count as instructor_courses_count, u.instructor_rating,
-       u.avatar_url as instructor_avatar_url, u.id as instructor_id FROM human_resources.courses c
-                     JOIN human_resources.users u ON c.author_id = u.id
-                     JOIN human_resources.categories cg on cg.id = c.category_id
-WHERE c.id = @id;
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.subtitle,
+    c.description,
+    c.language,
+    c.level,
+    u.description AS instructor_description,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_count,
+    c.lectures_length_interval,
+    c.avatar_url AS course_avatar_url,
+    c.preview_video_url,
+    c.status AS course_status,
+    c.created_at AS course_created_at,
+    c.course_goals,
+    c.requirements,
+    c.target_audience,
+    c.author_id,
+    cg.name AS category_title,
+    u.full_name AS instructor_full_name,
+    u.students_count AS instructor_students_count,
+    u.courses_count AS instructor_courses_count,
+    u.instructor_rating,
+    u.avatar_url AS instructor_avatar_url,
+    u.id AS instructor_id
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+        JOIN
+    human_resources.categories cg ON cg.id = c.category_id
+WHERE
+    c.id = @id;
+
+-- name: GetCourseReviewsByCourseID :many
+SELECT
+    cr.rating AS review_rating,
+    cr.review AS review_text,
+    cr.created_at AS review_created_at,
+    ru.full_name AS reviewer_full_name,
+    ru.avatar_url AS reviewer_avatar_url
+FROM
+    human_resources.courses_reviews cr
+        JOIN
+    human_resources.users ru ON cr.user_id = ru.id
+WHERE
+    cr.course_id = @id
+    ORDER by cr.created_at ASC;
 
 
 -- name: GetSectionsWithLecturesAndTestsByCourseID :many
@@ -198,7 +348,7 @@ SELECT
                                             )
                                                )
                             )
-                                 )
+                                    )
             )
     ) AS tests
 FROM

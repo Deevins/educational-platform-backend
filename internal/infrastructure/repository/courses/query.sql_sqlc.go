@@ -203,47 +203,92 @@ func (q *Queries) CreateTest(ctx context.Context, arg *CreateTestParams) (int32,
 }
 
 const getAllDraftCourses = `-- name: GetAllDraftCourses :many
-SELECT id, author_id, title, subtitle, description, avatar_url, students_count, ratings_count, rating, category_id, subcategory_id, language, level, time_planned, course_goals, requirements, target_audience, type, status, lectures_length, lectures_count, preview_video_url, created_at, updated_at FROM human_resources.courses c
-WHERE c.status != 'PENDING'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.lectures_count,
+    c.level,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'PENDING'
   AND c.status != 'READY'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.level,
+    c.lectures_count,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at
 `
 
-func (q *Queries) GetAllDraftCourses(ctx context.Context) ([]*HumanResourcesCourse, error) {
+type GetAllDraftCoursesRow struct {
+	CourseID               int32
+	Title                  string
+	Description            string
+	LecturesCount          *int32
+	Level                  *string
+	CoursePreviewVideoUrl  *string
+	CourseAvatarUrl        *string
+	Subtitle               *string
+	Rating                 *float64
+	StudentsCount          *int32
+	RatingsCount           *int32
+	LecturesLengthInterval pgtype.Interval
+	InstructorName         string
+	InstructorAvatarUrl    *string
+	CreatedAt              pgtype.Timestamptz
+}
+
+func (q *Queries) GetAllDraftCourses(ctx context.Context) ([]*GetAllDraftCoursesRow, error) {
 	rows, err := q.db.Query(ctx, getAllDraftCourses)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*HumanResourcesCourse
+	var items []*GetAllDraftCoursesRow
 	for rows.Next() {
-		var i HumanResourcesCourse
+		var i GetAllDraftCoursesRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.AuthorID,
+			&i.CourseID,
 			&i.Title,
-			&i.Subtitle,
 			&i.Description,
-			&i.AvatarUrl,
+			&i.LecturesCount,
+			&i.Level,
+			&i.CoursePreviewVideoUrl,
+			&i.CourseAvatarUrl,
+			&i.Subtitle,
+			&i.Rating,
 			&i.StudentsCount,
 			&i.RatingsCount,
-			&i.Rating,
-			&i.CategoryID,
-			&i.SubcategoryID,
-			&i.Language,
-			&i.Level,
-			&i.TimePlanned,
-			&i.CourseGoals,
-			&i.Requirements,
-			&i.TargetAudience,
-			&i.Type,
-			&i.Status,
-			&i.LecturesLength,
-			&i.LecturesCount,
-			&i.PreviewVideoUrl,
+			&i.LecturesLengthInterval,
+			&i.InstructorName,
+			&i.InstructorAvatarUrl,
 			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -256,47 +301,92 @@ func (q *Queries) GetAllDraftCourses(ctx context.Context) ([]*HumanResourcesCour
 }
 
 const getAllPendingCourses = `-- name: GetAllPendingCourses :many
-SELECT id, author_id, title, subtitle, description, avatar_url, students_count, ratings_count, rating, category_id, subcategory_id, language, level, time_planned, course_goals, requirements, target_audience, type, status, lectures_length, lectures_count, preview_video_url, created_at, updated_at  FROM human_resources.courses c
-WHERE c.status != 'DRAFT'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.level,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.lectures_count,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'DRAFT'
   AND c.status != 'READY'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.lectures_count,
+    c.level,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at
 `
 
-func (q *Queries) GetAllPendingCourses(ctx context.Context) ([]*HumanResourcesCourse, error) {
+type GetAllPendingCoursesRow struct {
+	CourseID               int32
+	Title                  string
+	Description            string
+	Level                  *string
+	CoursePreviewVideoUrl  *string
+	CourseAvatarUrl        *string
+	Subtitle               *string
+	LecturesCount          *int32
+	Rating                 *float64
+	StudentsCount          *int32
+	RatingsCount           *int32
+	LecturesLengthInterval pgtype.Interval
+	InstructorName         string
+	InstructorAvatarUrl    *string
+	CreatedAt              pgtype.Timestamptz
+}
+
+func (q *Queries) GetAllPendingCourses(ctx context.Context) ([]*GetAllPendingCoursesRow, error) {
 	rows, err := q.db.Query(ctx, getAllPendingCourses)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*HumanResourcesCourse
+	var items []*GetAllPendingCoursesRow
 	for rows.Next() {
-		var i HumanResourcesCourse
+		var i GetAllPendingCoursesRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.AuthorID,
+			&i.CourseID,
 			&i.Title,
-			&i.Subtitle,
 			&i.Description,
-			&i.AvatarUrl,
+			&i.Level,
+			&i.CoursePreviewVideoUrl,
+			&i.CourseAvatarUrl,
+			&i.Subtitle,
+			&i.LecturesCount,
+			&i.Rating,
 			&i.StudentsCount,
 			&i.RatingsCount,
-			&i.Rating,
-			&i.CategoryID,
-			&i.SubcategoryID,
-			&i.Language,
-			&i.Level,
-			&i.TimePlanned,
-			&i.CourseGoals,
-			&i.Requirements,
-			&i.TargetAudience,
-			&i.Type,
-			&i.Status,
-			&i.LecturesLength,
-			&i.LecturesCount,
-			&i.PreviewVideoUrl,
+			&i.LecturesLengthInterval,
+			&i.InstructorName,
+			&i.InstructorAvatarUrl,
 			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -309,47 +399,92 @@ func (q *Queries) GetAllPendingCourses(ctx context.Context) ([]*HumanResourcesCo
 }
 
 const getAllReadyCourses = `-- name: GetAllReadyCourses :many
-SELECT id, author_id, title, subtitle, description, avatar_url, students_count, ratings_count, rating, category_id, subcategory_id, language, level, time_planned, course_goals, requirements, target_audience, type, status, lectures_length, lectures_count, preview_video_url, created_at, updated_at FROM human_resources.courses c
-WHERE c.status != 'DRAFT'
-  AND c.status != 'PENDING'
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.description,
+    c.level,
+    c.lectures_count,
+    c.preview_video_url AS course_preview_video_url,
+    c.avatar_url AS course_avatar_url,
+    c.subtitle,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name AS instructor_name,
+    u.avatar_url AS instructor_avatar_url,
+    c.created_at -- Добавляем created_at в селекцию и группировку
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+WHERE
+    c.status != 'PENDING'
+  AND c.status != 'DRAFT'
+GROUP BY
+    c.id,
+    c.title,
+    c.description,
+    c.level,
+    c.preview_video_url,
+    c.avatar_url,
+    c.subtitle,
+    c.rating,
+    c.lectures_count,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_length_interval,
+    u.full_name,
+    u.avatar_url,
+    c.created_at -- Указали created_at в секции GROUP BY
 ORDER BY
     c.created_at
 `
 
-func (q *Queries) GetAllReadyCourses(ctx context.Context) ([]*HumanResourcesCourse, error) {
+type GetAllReadyCoursesRow struct {
+	CourseID               int32
+	Title                  string
+	Description            string
+	Level                  *string
+	LecturesCount          *int32
+	CoursePreviewVideoUrl  *string
+	CourseAvatarUrl        *string
+	Subtitle               *string
+	Rating                 *float64
+	StudentsCount          *int32
+	RatingsCount           *int32
+	LecturesLengthInterval pgtype.Interval
+	InstructorName         string
+	InstructorAvatarUrl    *string
+	CreatedAt              pgtype.Timestamptz
+}
+
+func (q *Queries) GetAllReadyCourses(ctx context.Context) ([]*GetAllReadyCoursesRow, error) {
 	rows, err := q.db.Query(ctx, getAllReadyCourses)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*HumanResourcesCourse
+	var items []*GetAllReadyCoursesRow
 	for rows.Next() {
-		var i HumanResourcesCourse
+		var i GetAllReadyCoursesRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.AuthorID,
+			&i.CourseID,
 			&i.Title,
-			&i.Subtitle,
 			&i.Description,
-			&i.AvatarUrl,
+			&i.Level,
+			&i.LecturesCount,
+			&i.CoursePreviewVideoUrl,
+			&i.CourseAvatarUrl,
+			&i.Subtitle,
+			&i.Rating,
 			&i.StudentsCount,
 			&i.RatingsCount,
-			&i.Rating,
-			&i.CategoryID,
-			&i.SubcategoryID,
-			&i.Language,
-			&i.Level,
-			&i.TimePlanned,
-			&i.CourseGoals,
-			&i.Requirements,
-			&i.TargetAudience,
-			&i.Type,
-			&i.Status,
-			&i.LecturesLength,
-			&i.LecturesCount,
-			&i.PreviewVideoUrl,
+			&i.LecturesLengthInterval,
+			&i.InstructorName,
+			&i.InstructorAvatarUrl,
 			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -383,6 +518,56 @@ func (q *Queries) GetCoursePreviewVideoByID(ctx context.Context, id int32) (*str
 	return preview_video_url, err
 }
 
+const getCourseReviewsByCourseID = `-- name: GetCourseReviewsByCourseID :many
+SELECT
+    cr.rating AS review_rating,
+    cr.review AS review_text,
+    cr.created_at AS review_created_at,
+    ru.full_name AS reviewer_full_name,
+    ru.avatar_url AS reviewer_avatar_url
+FROM
+    human_resources.courses_reviews cr
+        JOIN
+    human_resources.users ru ON cr.user_id = ru.id
+WHERE
+    cr.course_id = $1
+    ORDER by cr.created_at ASC
+`
+
+type GetCourseReviewsByCourseIDRow struct {
+	ReviewRating      int32
+	ReviewText        string
+	ReviewCreatedAt   pgtype.Timestamptz
+	ReviewerFullName  string
+	ReviewerAvatarUrl *string
+}
+
+func (q *Queries) GetCourseReviewsByCourseID(ctx context.Context, id int32) ([]*GetCourseReviewsByCourseIDRow, error) {
+	rows, err := q.db.Query(ctx, getCourseReviewsByCourseID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetCourseReviewsByCourseIDRow
+	for rows.Next() {
+		var i GetCourseReviewsByCourseIDRow
+		if err := rows.Scan(
+			&i.ReviewRating,
+			&i.ReviewText,
+			&i.ReviewCreatedAt,
+			&i.ReviewerFullName,
+			&i.ReviewerAvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCoursesAvatarsByIDs = `-- name: GetCoursesAvatarsByIDs :many
 SELECT id, avatar_url FROM human_resources.courses WHERE id = ANY($1::int[])
 `
@@ -413,17 +598,42 @@ func (q *Queries) GetCoursesAvatarsByIDs(ctx context.Context, dollar_1 []int32) 
 }
 
 const getFullCourseInfoWithInstructorByCourseID = `-- name: GetFullCourseInfoWithInstructorByCourseID :one
-SELECT c.id as course_id, c.title, c.subtitle,
-       c.description, c.language, c.level, u.description as instructor_description,
-       c.rating, c.students_count, c.ratings_count, c.lectures_count,
-       c.lectures_length, c.avatar_url as course_avatar_url, c.preview_video_url,
-       c.status as course_status, c.created_at as course_created_at, c.course_goals, c.requirements,
-       c.target_audience, c.author_id, cg.name as category_title, u.full_name as instructor_full_name,
-       u.students_count as instructor_students_count, u.courses_count as instructor_courses_count, u.instructor_rating,
-       u.avatar_url as instructor_avatar_url, u.id as instructor_id FROM human_resources.courses c
-                     JOIN human_resources.users u ON c.author_id = u.id
-                     JOIN human_resources.categories cg on cg.id = c.category_id
-WHERE c.id = $1
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.subtitle,
+    c.description,
+    c.language,
+    c.level,
+    u.description AS instructor_description,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_count,
+    c.lectures_length_interval,
+    c.avatar_url AS course_avatar_url,
+    c.preview_video_url,
+    c.status AS course_status,
+    c.created_at AS course_created_at,
+    c.course_goals,
+    c.requirements,
+    c.target_audience,
+    c.author_id,
+    cg.name AS category_title,
+    u.full_name AS instructor_full_name,
+    u.students_count AS instructor_students_count,
+    u.courses_count AS instructor_courses_count,
+    u.instructor_rating,
+    u.avatar_url AS instructor_avatar_url,
+    u.id AS instructor_id
+FROM
+    human_resources.courses c
+        JOIN
+    human_resources.users u ON c.author_id = u.id
+        JOIN
+    human_resources.categories cg ON cg.id = c.category_id
+WHERE
+    c.id = $1
 `
 
 type GetFullCourseInfoWithInstructorByCourseIDRow struct {
@@ -438,7 +648,7 @@ type GetFullCourseInfoWithInstructorByCourseIDRow struct {
 	StudentsCount           *int32
 	RatingsCount            *int32
 	LecturesCount           *int32
-	LecturesLength          *int32
+	LecturesLengthInterval  pgtype.Interval
 	CourseAvatarUrl         *string
 	PreviewVideoUrl         *string
 	CourseStatus            HumanResourcesCourseStatuses
@@ -471,7 +681,7 @@ func (q *Queries) GetFullCourseInfoWithInstructorByCourseID(ctx context.Context,
 		&i.StudentsCount,
 		&i.RatingsCount,
 		&i.LecturesCount,
-		&i.LecturesLength,
+		&i.LecturesLengthInterval,
 		&i.CourseAvatarUrl,
 		&i.PreviewVideoUrl,
 		&i.CourseStatus,
@@ -588,7 +798,7 @@ SELECT
                                             )
                                                )
                             )
-                                 )
+                                    )
             )
     ) AS tests
 FROM
@@ -636,7 +846,7 @@ SELECT c.id, c.title, c.description,
        c.avatar_url, c.subtitle,
        c.rating, c.students_count,
        c.ratings_count,
-       c.lectures_length FROM human_resources.courses c
+       c.lectures_length_interval FROM human_resources.courses c
                     INNER JOIN human_resources.courses_attendants uc ON c.id = uc.course_id
 WHERE uc.user_id = $1
   AND c.status != 'DRAFT'
@@ -646,15 +856,15 @@ ORDER BY
 `
 
 type GetUserCoursesRow struct {
-	ID             int32
-	Title          string
-	Description    string
-	AvatarUrl      *string
-	Subtitle       *string
-	Rating         *float64
-	StudentsCount  *int32
-	RatingsCount   *int32
-	LecturesLength *int32
+	ID                     int32
+	Title                  string
+	Description            string
+	AvatarUrl              *string
+	Subtitle               *string
+	Rating                 *float64
+	StudentsCount          *int32
+	RatingsCount           *int32
+	LecturesLengthInterval pgtype.Interval
 }
 
 func (q *Queries) GetUserCourses(ctx context.Context, userID int32) ([]*GetUserCoursesRow, error) {
@@ -675,7 +885,7 @@ func (q *Queries) GetUserCourses(ctx context.Context, userID int32) ([]*GetUserC
 			&i.Rating,
 			&i.StudentsCount,
 			&i.RatingsCount,
-			&i.LecturesLength,
+			&i.LecturesLengthInterval,
 		); err != nil {
 			return nil, err
 		}

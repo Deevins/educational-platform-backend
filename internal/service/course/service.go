@@ -7,6 +7,7 @@ import (
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses"
 	"github.com/deevins/educational-platform-backend/internal/model"
+	"github.com/samber/lo"
 	"time"
 )
 
@@ -188,7 +189,7 @@ func (s *Service) GetAllPendingCourses(ctx context.Context) ([]*model.ShortCours
 		return nil, err
 	}
 
-	return repackDBCoursesToModel(coursesList), nil
+	return repackDBPendingCoursesToModel(coursesList), nil
 }
 
 func (s *Service) GetInstructorCourses(ctx context.Context, instructorID int32) ([]*model.InstructorCourse, error) {
@@ -220,7 +221,7 @@ func (s *Service) GetAllDraftCourses(ctx context.Context) ([]*model.ShortCourse,
 		return nil, err
 	}
 
-	return repackDBCoursesToModel(coursesList), nil
+	return repackDBDraftCoursesToModel(coursesList), nil
 }
 
 func (s *Service) GetAllReadyCourses(ctx context.Context) ([]*model.ShortCourse, error) {
@@ -229,7 +230,7 @@ func (s *Service) GetAllReadyCourses(ctx context.Context) ([]*model.ShortCourse,
 		return nil, err
 	}
 
-	return repackDBCoursesToModel(coursesList), nil
+	return repackDBReadyCoursesToModel(coursesList), nil
 }
 
 func (s *Service) ApproveCourse(ctx context.Context, ID int32) (int32, error) {
@@ -265,24 +266,29 @@ func (s *Service) GetFullCoursePageInfoByCourseID(ctx context.Context, ID int32)
 		return nil, err
 	}
 
+	reviews, err := s.repo.GetCourseReviewsByCourseID(ctx, ID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.Course{
 		ID:              fc.CourseID,
 		Title:           fc.Title,
-		Subtitle:        *fc.Subtitle,
+		Subtitle:        lo.FromPtrOr(fc.Subtitle, ""),
 		Description:     fc.Description,
-		Language:        *fc.Language,
-		AvatarURL:       *fc.CourseAvatarUrl,
+		Language:        lo.FromPtrOr(fc.Language, ""),
+		AvatarURL:       lo.FromPtrOr(fc.CourseAvatarUrl, ""),
 		Requirements:    fc.Requirements,
-		Level:           *fc.Level,
-		LecturesLength:  time.Duration(*fc.LecturesLength),
+		Level:           lo.FromPtrOr(fc.Level, ""),
+		LecturesLength:  time.Duration(fc.LecturesLengthInterval.Microseconds / 1000000 / 60),
 		LecturesCount:   int(*fc.LecturesCount),
 		StudentsCount:   int(*fc.StudentsCount),
 		ReviewsCount:    int(*fc.RatingsCount),
-		Rating:          *fc.Rating,
-		PreviewVideoURL: *fc.PreviewVideoUrl,
+		Rating:          lo.FromPtrOr(fc.Rating, 0),
+		PreviewVideoURL: lo.FromPtrOr(fc.PreviewVideoUrl, ""),
 		TargetAudience:  fc.TargetAudience,
 		CourseGoals:     fc.CourseGoals,
-		Instructor: model.CourseInstructor{
+		Instructor: &model.CourseInstructor{
 			ID:            fc.InstructorID,
 			FullName:      fc.InstructorFullName,
 			AvatarURL:     *fc.InstructorAvatarUrl,
@@ -293,8 +299,25 @@ func (s *Service) GetFullCoursePageInfoByCourseID(ctx context.Context, ID int32)
 		},
 		CreatedAt: fc.CourseCreatedAt.Time,
 		Status:    string(fc.CourseStatus),
+		Reviews:   repackCourseReviews(reviews),
 		Category:  fc.CategoryTitle,
 	}, nil
+}
+
+func repackCourseReviews(crs []*courses.GetCourseReviewsByCourseIDRow) []*model.CourseReview {
+	var reviews []*model.CourseReview
+	for _, cr := range crs {
+		reviews = append(reviews, &model.CourseReview{
+			FullName:   cr.ReviewerFullName,
+			AvatarURL:  lo.FromPtrOr(cr.ReviewerAvatarUrl, ""),
+			Rating:     cr.ReviewRating,
+			ReviewText: cr.ReviewText,
+			CreatedAt:  cr.ReviewCreatedAt.Time,
+		})
+	}
+
+	return reviews
+
 }
 
 func (s *Service) GetUserCoursesByUserID(ctx context.Context, ID int32) ([]*model.ShortCourse, error) {

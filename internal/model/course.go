@@ -4,26 +4,27 @@ import "time"
 
 // Course represents a course
 type Course struct {
-	ID              int32            `json:"id"`
-	Title           string           `json:"title"`
-	Subtitle        string           `json:"subtitle"`
-	Description     string           `json:"description"`
-	Language        string           `json:"language"`
-	AvatarURL       string           `json:"avatar_url"`
-	Requirements    []string         `json:"requirements"`
-	Level           string           `json:"level"`
-	LecturesLength  time.Duration    `json:"lectures_length"`
-	LecturesCount   int              `json:"lectures_count"`
-	StudentsCount   int              `json:"students_count"`
-	ReviewsCount    int              `json:"reviews_count"`
-	Rating          float64          `json:"rating"`
-	PreviewVideoURL string           `json:"preview_video_URL"`
-	TargetAudience  []string         `json:"target_audience"`
-	CourseGoals     []string         `json:"course_goals"`
-	Instructor      CourseInstructor `json:"instructor"`
-	CreatedAt       time.Time        `json:"created_at"`
-	Status          string           `json:"status"`
-	Category        string           `json:"category"`
+	ID              int32             `json:"id"`
+	Title           string            `json:"title"`
+	Subtitle        string            `json:"subtitle"`
+	Description     string            `json:"description"`
+	Language        string            `json:"language"`
+	AvatarURL       string            `json:"avatar_url"`
+	Requirements    []string          `json:"requirements"`
+	Level           string            `json:"level"`
+	LecturesLength  time.Duration     `json:"lectures_length"`
+	LecturesCount   int               `json:"lectures_count"`
+	StudentsCount   int               `json:"students_count"`
+	ReviewsCount    int               `json:"reviews_count"`
+	Rating          float64           `json:"rating"`
+	PreviewVideoURL string            `json:"preview_video_URL"`
+	TargetAudience  []string          `json:"target_audience"`
+	CourseGoals     []string          `json:"course_goals"`
+	Instructor      *CourseInstructor `json:"instructor"`
+	CreatedAt       time.Time         `json:"created_at"`
+	Status          string            `json:"status"`
+	Reviews         []*CourseReview   `json:"reviews"`
+	Category        string            `json:"category"`
 }
 
 // CourseInstructor represents an instructor of a course
@@ -38,25 +39,29 @@ type CourseInstructor struct {
 }
 
 type ShortCourse struct {
-	ID             int32         `json:"id,omitempty" `
-	Title          string        `json:"title,omitempty" `
-	AvatarURL      string        `json:"avatar_url,omitempty" `
-	Status         string        `json:"status,omitempty" `
-	Subtitle       string        `json:"subtitle,omitempty" `
-	Rating         float64       `json:"rating,omitempty" ` // count all ratings of instructor and divide by count of courses
-	StudentsCount  int32         `json:"students_count,omitempty" `
-	LecturesLength time.Duration `json:"lectures_length,omitempty" `
-	Description    string        `json:"description,omitempty" `
+	ID              int32         `json:"id" `
+	Title           string        `json:"title" `
+	CourseAvatarURL string        `json:"course_avatar_url" `
+	Status          string        `json:"status" `
+	Subtitle        string        `json:"subtitle" `
+	Level           string        `json:"level" `
+	AuthorFullName  string        `json:"author_full_name" `
+	Rating          float64       `json:"rating" ` // count all ratings of instructor and divide by count of courses
+	StudentsCount   int32         `json:"students_count" `
+	ReviewsCount    int32         `json:"reviews_count" `
+	LecturesCount   int32         `json:"lectures_count" `
+	LecturesLength  time.Duration `json:"lectures_length" `
+
+	Description string `json:"description,omitempty" `
 }
 
 // CourseReview represents a review of a course on the course page
 type CourseReview struct {
-	ID         int32   `json:"id"`
-	FullName   string  `json:"full_name"`
-	AvatarURL  string  `json:"avatar"`
-	Rating     float64 `json:"rating"`
-	ReviewText string  `json:"review_text"`
-	CreatedAt  string  `json:"created_at"`
+	FullName   string    `json:"full_name"`
+	AvatarURL  string    `json:"avatar"`
+	Rating     int32     `json:"rating"`
+	ReviewText string    `json:"review_text"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type InstructorCourse struct {

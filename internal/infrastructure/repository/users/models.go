@@ -147,30 +147,30 @@ type HumanResourcesCategory struct {
 }
 
 type HumanResourcesCourse struct {
-	ID              int32
-	AuthorID        int32
-	Title           string
-	Subtitle        *string
-	Description     string
-	AvatarUrl       *string
-	StudentsCount   *int32
-	RatingsCount    *int32
-	Rating          *float64
-	CategoryID      *int32
-	SubcategoryID   *int32
-	Language        *string
-	Level           *string
-	TimePlanned     *string
-	CourseGoals     []string
-	Requirements    []string
-	TargetAudience  []string
-	Type            HumanResourcesCourseTypes
-	Status          HumanResourcesCourseStatuses
-	LecturesLength  *int32
-	LecturesCount   *int32
-	PreviewVideoUrl *string
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	ID                     int32
+	AuthorID               int32
+	Title                  string
+	Subtitle               *string
+	Description            string
+	AvatarUrl              *string
+	StudentsCount          *int32
+	RatingsCount           *int32
+	Rating                 *float64
+	CategoryID             *int32
+	SubcategoryID          *int32
+	Language               *string
+	Level                  *string
+	TimePlanned            *string
+	CourseGoals            []string
+	Requirements           []string
+	TargetAudience         []string
+	Type                   HumanResourcesCourseTypes
+	Status                 HumanResourcesCourseStatuses
+	LecturesLengthInterval pgtype.Interval
+	LecturesCount          *int32
+	PreviewVideoUrl        *string
+	CreatedAt              pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
 }
 
 type HumanResourcesCoursesAttendant struct {
@@ -242,6 +242,16 @@ type HumanResourcesLecture struct {
 	VideoUrl     string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+}
+
+type HumanResourcesLecturesResource struct {
+	ID          int32
+	LectureID   int32
+	Title       string
+	Extension   string
+	ResourceUrl string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type HumanResourcesNotification struct {

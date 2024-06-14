@@ -12,30 +12,78 @@ func repackSearchResultsToModel(courses []*courses.SearchCoursesByTitleRow) []*m
 
 	for _, course := range courses {
 		modelCourses = append(modelCourses, &model.ShortCourse{
-			ID:            course.ID,
-			Title:         course.Title,
-			AvatarURL:     lo.FromPtrOr(course.AvatarUrl, ""),
-			Rating:        lo.FromPtrOr(course.Rating, 0.0),
-			StudentsCount: lo.FromPtrOr(course.StudentsCount, 0),
+			ID:              course.ID,
+			Title:           course.Title,
+			CourseAvatarURL: lo.FromPtrOr(course.AvatarUrl, ""),
+			Rating:          lo.FromPtrOr(course.Rating, 0.0),
+			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
 		})
 	}
 
 	return modelCourses
 }
 
-func repackDBCoursesToModel(courses []*courses.HumanResourcesCourse) []*model.ShortCourse {
+func repackDBPendingCoursesToModel(courses []*courses.GetAllPendingCoursesRow) []*model.ShortCourse {
 	var modelCourses []*model.ShortCourse
 
 	for _, course := range courses {
 		modelCourses = append(modelCourses, &model.ShortCourse{
-			ID:             course.ID,
-			Title:          course.Title,
-			AvatarURL:      lo.FromPtrOr(course.AvatarUrl, ""),
-			Subtitle:       lo.FromPtrOr(course.Subtitle, ""),
-			Rating:         lo.FromPtrOr(course.Rating, 0.0),
-			StudentsCount:  lo.FromPtrOr(course.StudentsCount, 0),
-			LecturesLength: time.Duration(lo.FromPtrOr(course.LecturesLength, 0)),
-			Description:    course.Description,
+			ID:              course.CourseID,
+			Title:           course.Title,
+			AuthorFullName:  course.InstructorName,
+			CourseAvatarURL: lo.FromPtrOr(course.CourseAvatarUrl, ""),
+			Subtitle:        lo.FromPtrOr(course.Subtitle, ""),
+			Rating:          lo.FromPtrOr(course.Rating, 0.0),
+			Level:           lo.FromPtrOr(course.Level, ""),
+			ReviewsCount:    lo.FromPtrOr(course.RatingsCount, 0),
+			LecturesCount:   lo.FromPtrOr(course.LecturesCount, 0),
+			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
+			LecturesLength:  time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
+			Description:     course.Description,
+		})
+	}
+
+	return modelCourses
+}
+func repackDBReadyCoursesToModel(courses []*courses.GetAllReadyCoursesRow) []*model.ShortCourse {
+	var modelCourses []*model.ShortCourse
+
+	for _, course := range courses {
+		modelCourses = append(modelCourses, &model.ShortCourse{
+			ID:              course.CourseID,
+			Title:           course.Title,
+			AuthorFullName:  course.InstructorName,
+			CourseAvatarURL: lo.FromPtrOr(course.CourseAvatarUrl, ""),
+			Subtitle:        lo.FromPtrOr(course.Subtitle, ""),
+			Rating:          lo.FromPtrOr(course.Rating, 0.0),
+			Level:           lo.FromPtrOr(course.Level, ""),
+			ReviewsCount:    lo.FromPtrOr(course.RatingsCount, 0),
+			LecturesCount:   lo.FromPtrOr(course.LecturesCount, 0),
+			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
+			LecturesLength:  time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
+			Description:     course.Description,
+		})
+	}
+
+	return modelCourses
+}
+func repackDBDraftCoursesToModel(courses []*courses.GetAllDraftCoursesRow) []*model.ShortCourse {
+	var modelCourses []*model.ShortCourse
+
+	for _, course := range courses {
+		modelCourses = append(modelCourses, &model.ShortCourse{
+			ID:              course.CourseID,
+			Title:           course.Title,
+			AuthorFullName:  course.InstructorName,
+			CourseAvatarURL: lo.FromPtrOr(course.CourseAvatarUrl, ""),
+			Subtitle:        lo.FromPtrOr(course.Subtitle, ""),
+			Rating:          lo.FromPtrOr(course.Rating, 0.0),
+			Level:           lo.FromPtrOr(course.Level, ""),
+			ReviewsCount:    lo.FromPtrOr(course.RatingsCount, 0),
+			LecturesCount:   lo.FromPtrOr(course.LecturesCount, 0),
+			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
+			LecturesLength:  time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
+			Description:     course.Description,
 		})
 	}
 
@@ -47,13 +95,14 @@ func repackDBCoursesToShortModel(courses []*courses.GetUserCoursesRow) []*model.
 
 	for _, course := range courses {
 		modelCourses = append(modelCourses, &model.ShortCourse{
-			ID:             course.ID,
-			Title:          course.Title,
-			AvatarURL:      lo.FromPtrOr(course.AvatarUrl, ""),
-			Subtitle:       lo.FromPtrOr(course.Subtitle, ""),
-			Rating:         lo.FromPtrOr(course.Rating, 0.0),
+			ID:              course.ID,
+			Title:           course.Title,
+			CourseAvatarURL: lo.FromPtrOr(course.AvatarUrl, ""),
+			Subtitle:        lo.FromPtrOr(course.Subtitle, ""),
+			Rating:          lo.FromPtrOr(course.Rating, 0.0),
+
 			StudentsCount:  lo.FromPtrOr(course.StudentsCount, 0),
-			LecturesLength: time.Duration(lo.FromPtrOr(course.LecturesLength, 0)),
+			LecturesLength: time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
 			Description:    course.Description,
 		})
 	}
