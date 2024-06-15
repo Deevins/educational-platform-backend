@@ -208,13 +208,12 @@ type HumanResourcesForumThreadsMessage struct {
 }
 
 type HumanResourcesInstructorsInfo struct {
-	ID                    int32
-	UserID                int32
-	HasPreviousExperience string
-	HasVideoKnowledge     string
-	CurrentAudience       string
-	CreatedAt             pgtype.Timestamptz
-	UpdatedAt             pgtype.Timestamptz
+	UserID             int32
+	PreviousExperience string
+	VideoKnowledge     string
+	CurrentAudience    string
+	CreatedAt          pgtype.Timestamptz
+	UpdatedAt          pgtype.Timestamptz
 }
 
 type HumanResourcesLanguage struct {

@@ -22,7 +22,8 @@ var passwordSalt = []byte(os.Getenv("SALT"))
 // TokenClaimsWithId Structure of token with user id
 type TokenClaimsWithId struct {
 	jwt.RegisteredClaims
-	UserID int32 `json:"user_id"`
+	UserID   int32  `json:"user_id"`
+	UserRole string `json:"user_role"`
 }
 
 type Service struct {
@@ -85,19 +86,23 @@ func (s *Service) Authorize(ctx context.Context, email, password string) (LoginU
 		return LoginUserResponse{}, errors.Wrap(err, "failed to get user by email and password")
 	}
 
+	role, _ := user.Role.Value()
+
 	// token create new JWT token and sign it.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaimsWithId{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		UserID: user.ID,
+		UserID:   user.ID,
+		UserRole: role.(string),
 	})
+
 	jwtt, err := token.SignedString(jwtKey)
 	if err != nil {
 		return LoginUserResponse{}, errors.Wrap(err, "failed to sign token")
-
 	}
+
 	return LoginUserResponse{
 		UserID: user.ID,
 		Token:  jwtt,
@@ -130,13 +135,18 @@ func (s *Service) getUserByIDAndGenerateToken(ctx context.Context, id int32) (st
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get user by id")
 	}
+
+	role, _ := user.Role.Value()
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaimsWithId{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		UserID: user.ID,
+		UserID:   user.ID,
+		UserRole: role.(string),
 	})
+
 	jwtt, err := token.SignedString(jwtKey)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to sign token")

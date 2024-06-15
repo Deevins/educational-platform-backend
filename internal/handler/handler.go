@@ -17,7 +17,6 @@ type UserService interface {
 	GetByID(ctx context.Context, ID int32) (*model.User, error)
 	GetHasUserTriedInstructor(ctx context.Context, ID int32) (bool, error)
 	SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error
-	GetSelfInfo(ctx context.Context, ID int32) (*model.User, error)
 	UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileDataType) (string, error)
 	AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error
 	UpdateUserInfo(ctx context.Context, user *model.UserUpdate) error
@@ -73,7 +72,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	}
 	course := router.Group("/courses")
 	{
-		//course.GET("/get-one/:courseID", h.getFullCoursePage)                                        // temp OK
 		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)   // для вывода курсов по id пользователя у него на странице или еще где ok
 		course.GET("/get-all", h.getAllCoursesWithFilters)                    // OK courses with READY status for all courses page
 		course.GET("/get-latest-eight", h.getLatestEightCourses)              // OK
@@ -116,7 +114,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		threads.GET("/get-all-threads", h.getAllThreads)
 		threads.POST("/create-thread", h.createThread)
 		threads.POST("/answer-in-thread", h.answerInThread)
-		threads.GET("/search-threads-by-title", h.searchThreadsByTitle)
+		threads.GET("/search-threads-by-title/:query", h.searchThreadsByTitle)
 		threads.GET("/get-one-thread", h.getOneThread) // here we must get all threads messages
 		threads.POST("/add-tag-to-thread", h.addTagToThread)
 	}

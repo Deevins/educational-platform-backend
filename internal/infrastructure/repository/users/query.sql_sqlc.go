@@ -10,26 +10,26 @@ import (
 )
 
 const addTeachingExperience = `-- name: AddTeachingExperience :one
-INSERT INTO human_resources.instructors_info (user_id, has_video_knowledge, current_audience, has_previous_experience) VALUES ($1, $2, $3, $4) RETURNING id
+INSERT INTO human_resources.instructors_info (user_id, video_knowledge, current_audience, previous_experience) VALUES ($1, $2, $3, $4) RETURNING user_id
 `
 
 type AddTeachingExperienceParams struct {
-	UserID                int32
-	HasVideoKnowledge     string
-	CurrentAudience       string
-	HasPreviousExperience string
+	UserID             int32
+	VideoKnowledge     string
+	CurrentAudience    string
+	PreviousExperience string
 }
 
 func (q *Queries) AddTeachingExperience(ctx context.Context, arg *AddTeachingExperienceParams) (int32, error) {
 	row := q.db.QueryRow(ctx, addTeachingExperience,
 		arg.UserID,
-		arg.HasVideoKnowledge,
+		arg.VideoKnowledge,
 		arg.CurrentAudience,
-		arg.HasPreviousExperience,
+		arg.PreviousExperience,
 	)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
+	var user_id int32
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
 const checkIfUserRegisteredToCourse = `-- name: CheckIfUserRegisteredToCourse :one

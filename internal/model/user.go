@@ -31,10 +31,10 @@ type UserUpdateAvatar struct {
 }
 
 type UserUpdateTeachingExperience struct {
-	UserID               int32  `json:"user_id"`
-	VideoKnowledge       string `json:"video_knowledge"`
-	PreviousExperience   string `json:"previous_experience"`
-	CurrentAudienceCount string `json:"current_audience_count"`
+	UserID             int32  `json:"user_id"`
+	VideoKnowledge     string `json:"video_knowledge"`
+	PreviousExperience string `json:"previous_experience"`
+	CurrentAudience    string `json:"current_audience"`
 }
 
 type UserIDWithResourceLink struct {

@@ -27,6 +27,7 @@ func (h *Handler) signUp(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"id":    res.UserID,
+		"role":  "USER",
 		"token": res.Token,
 	})
 

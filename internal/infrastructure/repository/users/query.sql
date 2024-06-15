@@ -29,7 +29,7 @@ UPDATE human_resources.users SET description = @description WHERE id = @id RETUR
 UPDATE human_resources.users SET phone_number = @phone_number WHERE id = @id RETURNING id;
 
 -- name: AddTeachingExperience :one
-INSERT INTO human_resources.instructors_info (user_id, has_video_knowledge, current_audience, has_previous_experience) VALUES (@user_id, @has_video_knowledge, @current_audience, @has_previous_experience) RETURNING id;
+INSERT INTO human_resources.instructors_info (user_id, video_knowledge, current_audience, previous_experience) VALUES (@user_id, @video_knowledge, @current_audience, @previous_experience) RETURNING user_id;
 
 -- name: UpdateAvatar :one
 UPDATE human_resources.users SET avatar_url = @avatar_url WHERE id = @id RETURNING id;

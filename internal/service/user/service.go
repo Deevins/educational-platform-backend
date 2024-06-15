@@ -18,6 +18,13 @@ type Service struct {
 	s3   S3.Client
 }
 
+func NewService(repo users.Querier, s3Client S3.Client) *Service {
+	return &Service{
+		repo: repo,
+		s3:   s3Client,
+	}
+}
+
 func (s *Service) CheckIfUserRegisteredToCourse(ctx context.Context, userID, courseID int32) (bool, error) {
 	_, err := s.repo.CheckIfUserRegisteredToCourse(ctx, &users.CheckIfUserRegisteredToCourseParams{
 		UserID:   userID,
@@ -44,13 +51,6 @@ func (s *Service) RegisterToCourse(ctx context.Context, userID, courseID int32) 
 	}
 
 	return nil
-}
-
-func NewService(repo users.Querier, s3Client S3.Client) *Service {
-	return &Service{
-		repo: repo,
-		s3:   s3Client,
-	}
 }
 
 func (s *Service) SetHasUserTriedInstructorToTrue(ctx context.Context, ID int32) error {
@@ -117,10 +117,10 @@ func (s *Service) UpdateAvatar(ctx context.Context, ID int32, avatar S3.FileData
 
 func (s *Service) AddUserTeachingExperience(ctx context.Context, exp *model.UserUpdateTeachingExperience) error {
 	_, err := s.repo.AddTeachingExperience(ctx, &users.AddTeachingExperienceParams{
-		HasVideoKnowledge:     exp.VideoKnowledge,
-		HasPreviousExperience: exp.PreviousExperience,
-		CurrentAudience:       exp.CurrentAudienceCount,
-		UserID:                exp.UserID,
+		VideoKnowledge:     exp.VideoKnowledge,
+		PreviousExperience: exp.PreviousExperience,
+		CurrentAudience:    exp.CurrentAudience,
+		UserID:             exp.UserID,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to update user teaching experience")
@@ -168,20 +168,4 @@ func (s *Service) UpdateUserInfo(ctx context.Context, user *model.UserUpdate) er
 	}
 
 	return nil
-}
-
-func (s *Service) GetSelfInfo(ctx context.Context, ID int32) (*model.User, error) {
-	user, err := s.repo.GetUserByID(ctx, ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get user by id")
-	}
-
-	return &model.User{
-		ID:          user.ID,
-		FullName:    user.FullName,
-		Description: lo.FromPtrOr(user.Description, ""),
-		Email:       user.Email,
-		AvatarUrl:   *user.AvatarUrl,
-		PhoneNumber: user.PhoneNumber,
-	}, nil
 }
