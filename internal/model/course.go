@@ -29,13 +29,15 @@ type Course struct {
 
 // CourseInstructor represents an instructor of a course
 type CourseInstructor struct {
-	ID            int32   `json:"id"`
-	FullName      string  `json:"full_name"`
-	AvatarURL     string  `json:"avatar_url"`
-	Description   string  `json:"description"`
-	StudentsCount int32   `json:"students_count"`
-	CoursesCount  int32   `json:"courses_count"`
-	Rating        float64 `json:"rating"` // count all ratings of instructor and divide by count of courses
+	ID            int32               `json:"id"`
+	FullName      string              `json:"full_name"`
+	AvatarURL     string              `json:"avatar_url"`
+	Description   string              `json:"description"`
+	StudentsCount int32               `json:"students_count"`
+	CoursesCount  int32               `json:"courses_count"`
+	RatingsCount  int32               `json:"ratings_count"`
+	Courses       []*InstructorCourse `json:"courses"`
+	Rating        float64             `json:"rating"` // count all ratings of instructor and divide by count of courses
 }
 
 type ShortCourse struct {
@@ -65,10 +67,11 @@ type CourseReview struct {
 }
 
 type InstructorCourse struct {
-	ID        int32  `json:"id"`
-	Title     string `json:"title"`
-	AvatarURL string `json:"avatar_url"`
-	Status    string `json:"status"`
+	ID           int32   `json:"id"`
+	Title        string  `json:"title"`
+	AvatarURL    string  `json:"avatar_url"`
+	Rating       float64 `json:"rating"`
+	ReviewsCount int32   `json:"reviews_count"`
 }
 
 type GetAllCoursesResponse struct {

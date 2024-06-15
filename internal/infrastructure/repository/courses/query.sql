@@ -223,10 +223,10 @@ DELETE FROM human_resources.lectures WHERE id = @id AND section_id = @section_id
 DELETE FROM human_resources.tests WHERE id = @id AND section_id = @section_id RETURNING id;
 
 -- name: GetInstructorCourses :many
-SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c WHERE author_id = @author_id ORDER BY created_at DESC;
+SELECT c.id, c.avatar_url, c.title, c.ratings_count, c.rating FROM human_resources.courses c WHERE author_id = @author_id ORDER BY created_at DESC;
 
 -- name: SearchInstructorCoursesByTitle :many
-SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c
+SELECT c.id, c.avatar_url, c.title, c.status, c.title, c.ratings_count, c.rating FROM human_resources.courses c
 WHERE to_tsvector('russian', c.title) @@ plainto_tsquery('russian', @title)
   AND author_id = @author_id;
 
@@ -257,17 +257,18 @@ SELECT
     c.author_id,
     cg.name AS category_title,
     u.full_name AS instructor_full_name,
-    u.students_count AS instructor_students_count,
-    u.courses_count AS instructor_courses_count,
+    (SELECT COUNT(*) FROM human_resources.courses WHERE author_id = u.id) AS instructor_courses_count,
+    (SELECT SUM(students_count) FROM human_resources.courses WHERE author_id = u.id) AS instructor_students_count,
+    (SELECT COUNT(*) FROM human_resources.courses_reviews cr
+     JOIN human_resources.courses cc ON cr.course_id = cc.id
+     WHERE cc.author_id = u.id) AS total_reviews_count,
     u.instructor_rating,
     u.avatar_url AS instructor_avatar_url,
     u.id AS instructor_id
 FROM
     human_resources.courses c
-        JOIN
-    human_resources.users u ON c.author_id = u.id
-        JOIN
-    human_resources.categories cg ON cg.id = c.category_id
+    JOIN human_resources.users u ON c.author_id = u.id
+    JOIN human_resources.categories cg ON cg.id = c.category_id
 WHERE
     c.id = @id;
 

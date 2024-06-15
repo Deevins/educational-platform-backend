@@ -350,5 +350,5 @@ type HumanResourcesUser struct {
 	Role                   NullHumanResourcesRoles
 	StudentsCount          int32
 	CoursesCount           int32
-	InstructorRating       int32
+	InstructorRating       float64
 }

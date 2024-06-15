@@ -621,17 +621,18 @@ SELECT
     c.author_id,
     cg.name AS category_title,
     u.full_name AS instructor_full_name,
-    u.students_count AS instructor_students_count,
-    u.courses_count AS instructor_courses_count,
+    (SELECT COUNT(*) FROM human_resources.courses WHERE author_id = u.id) AS instructor_courses_count,
+    (SELECT SUM(students_count) FROM human_resources.courses WHERE author_id = u.id) AS instructor_students_count,
+    (SELECT COUNT(*) FROM human_resources.courses_reviews cr
+     JOIN human_resources.courses cc ON cr.course_id = cc.id
+     WHERE cc.author_id = u.id) AS total_reviews_count,
     u.instructor_rating,
     u.avatar_url AS instructor_avatar_url,
     u.id AS instructor_id
 FROM
     human_resources.courses c
-        JOIN
-    human_resources.users u ON c.author_id = u.id
-        JOIN
-    human_resources.categories cg ON cg.id = c.category_id
+    JOIN human_resources.users u ON c.author_id = u.id
+    JOIN human_resources.categories cg ON cg.id = c.category_id
 WHERE
     c.id = $1
 `
@@ -659,9 +660,10 @@ type GetFullCourseInfoWithInstructorByCourseIDRow struct {
 	AuthorID                int32
 	CategoryTitle           string
 	InstructorFullName      string
-	InstructorStudentsCount int32
-	InstructorCoursesCount  int32
-	InstructorRating        int32
+	InstructorCoursesCount  int64
+	InstructorStudentsCount int64
+	TotalReviewsCount       int64
+	InstructorRating        float64
 	InstructorAvatarUrl     *string
 	InstructorID            int32
 }
@@ -692,8 +694,9 @@ func (q *Queries) GetFullCourseInfoWithInstructorByCourseID(ctx context.Context,
 		&i.AuthorID,
 		&i.CategoryTitle,
 		&i.InstructorFullName,
-		&i.InstructorStudentsCount,
 		&i.InstructorCoursesCount,
+		&i.InstructorStudentsCount,
+		&i.TotalReviewsCount,
 		&i.InstructorRating,
 		&i.InstructorAvatarUrl,
 		&i.InstructorID,
@@ -702,14 +705,15 @@ func (q *Queries) GetFullCourseInfoWithInstructorByCourseID(ctx context.Context,
 }
 
 const getInstructorCourses = `-- name: GetInstructorCourses :many
-SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c WHERE author_id = $1 ORDER BY created_at DESC
+SELECT c.id, c.avatar_url, c.title, c.ratings_count, c.rating FROM human_resources.courses c WHERE author_id = $1 ORDER BY created_at DESC
 `
 
 type GetInstructorCoursesRow struct {
-	ID        int32
-	AvatarUrl *string
-	Title     string
-	Status    HumanResourcesCourseStatuses
+	ID           int32
+	AvatarUrl    *string
+	Title        string
+	RatingsCount *int32
+	Rating       *float64
 }
 
 func (q *Queries) GetInstructorCourses(ctx context.Context, authorID int32) ([]*GetInstructorCoursesRow, error) {
@@ -725,7 +729,8 @@ func (q *Queries) GetInstructorCourses(ctx context.Context, authorID int32) ([]*
 			&i.ID,
 			&i.AvatarUrl,
 			&i.Title,
-			&i.Status,
+			&i.RatingsCount,
+			&i.Rating,
 		); err != nil {
 			return nil, err
 		}
@@ -1000,7 +1005,7 @@ func (q *Queries) SearchCoursesByTitle(ctx context.Context, title string) ([]*Se
 }
 
 const searchInstructorCoursesByTitle = `-- name: SearchInstructorCoursesByTitle :many
-SELECT c.id, c.avatar_url, c.title, c.status FROM human_resources.courses c
+SELECT c.id, c.avatar_url, c.title, c.status, c.title, c.ratings_count, c.rating FROM human_resources.courses c
 WHERE to_tsvector('russian', c.title) @@ plainto_tsquery('russian', $1)
   AND author_id = $2
 `
@@ -1011,10 +1016,13 @@ type SearchInstructorCoursesByTitleParams struct {
 }
 
 type SearchInstructorCoursesByTitleRow struct {
-	ID        int32
-	AvatarUrl *string
-	Title     string
-	Status    HumanResourcesCourseStatuses
+	ID           int32
+	AvatarUrl    *string
+	Title        string
+	Status       HumanResourcesCourseStatuses
+	Title_2      string
+	RatingsCount *int32
+	Rating       *float64
 }
 
 func (q *Queries) SearchInstructorCoursesByTitle(ctx context.Context, arg *SearchInstructorCoursesByTitleParams) ([]*SearchInstructorCoursesByTitleRow, error) {
@@ -1031,6 +1039,9 @@ func (q *Queries) SearchInstructorCoursesByTitle(ctx context.Context, arg *Searc
 			&i.AvatarUrl,
 			&i.Title,
 			&i.Status,
+			&i.Title_2,
+			&i.RatingsCount,
+			&i.Rating,
 		); err != nil {
 			return nil, err
 		}

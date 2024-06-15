@@ -9,6 +9,9 @@ sql:
       out: internal\infrastructure\repository\users\
       output_db_file_name: db_sqlc.go
       output_files_suffix: _sqlc
+      overrides:
+      - column: human_resources.users.instructor_rating
+        go_type: float64
       package: users
       sql_package: pgx/v5
   queries: internal\infrastructure\repository\users\query.sql

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS human_resources.users (
     role human_resources.roles DEFAULT 'USER',
     students_count INTEGER DEFAULT 0 not null,
     courses_count INTEGER DEFAULT 0 not null,
-    instructor_rating INTEGER DEFAULT 0 not null
+    instructor_rating FLOAT DEFAULT 0 not null
 );
 
 

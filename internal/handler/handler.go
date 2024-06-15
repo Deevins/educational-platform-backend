@@ -69,17 +69,17 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.POST("/update-avatar", h.updateAvatar)
 		user.POST("/register-on-course", h.registerOnCourse)
 		user.GET("/check-if-user-registered-to-course", h.checkIfUserRegisteredToCourse)
+		user.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
 	}
 	course := router.Group("/courses")
 	{
 		//course.GET("/get-one/:courseID", h.getFullCoursePage)                                        // temp OK
-		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)                          // для вывода курсов по id пользователя у него на странице или еще где ok
-		course.GET("/get-all", h.getAllCoursesWithFilters)                                           // OK courses with READY status for all courses page
-		course.GET("/get-latest-eight", h.getLatestEightCourses)                                     // OK
-		course.POST("/create-base", h.createCourseBase)                                              // OK type must be 'course' or 'practice'
-		course.DELETE("/delete/:courseID", h.deleteCourse)                                           // OK
-		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle)                        // OK
-		course.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
+		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)   // для вывода курсов по id пользователя у него на странице или еще где ok
+		course.GET("/get-all", h.getAllCoursesWithFilters)                    // OK courses with READY status for all courses page
+		course.GET("/get-latest-eight", h.getLatestEightCourses)              // OK
+		course.POST("/create-base", h.createCourseBase)                       // OK type must be 'course' or 'practice'
+		course.DELETE("/delete/:courseID", h.deleteCourse)                    // OK
+		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle) // OK
 		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
 		course.POST("/send-to-check/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
@@ -102,7 +102,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/update-test-title/:testID", h.updateTestTitle)
 		course.POST("/add-questions-to-test/:testID", h.addQuestionsToTest)
 		course.POST("/update-lecture-video-url/:lectureID", h.uploadLectureVideo)
-
 	}
 	directories := router.Group("/directories")
 	{

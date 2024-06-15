@@ -198,7 +198,7 @@ func (s *Service) GetInstructorCourses(ctx context.Context, instructorID int32) 
 		return nil, err
 	}
 
-	return repackInstructorCoursesToModel(instructorCourses)
+	return repackInstructorCoursesToModel(instructorCourses), nil
 }
 
 func (s *Service) SearchInstructionCoursesByTitle(ctx context.Context, instructorID int32, title string) ([]*model.InstructorCourse, error) {
@@ -212,7 +212,7 @@ func (s *Service) SearchInstructionCoursesByTitle(ctx context.Context, instructo
 
 	}
 
-	return repackSearchInstructorCoursesByTitleToModel(instructorCourses)
+	return repackSearchInstructorCoursesByTitleToModel(instructorCourses), nil
 }
 
 func (s *Service) GetAllDraftCourses(ctx context.Context) ([]*model.ShortCourse, error) {
@@ -271,6 +271,11 @@ func (s *Service) GetFullCoursePageInfoByCourseID(ctx context.Context, ID int32)
 		return nil, err
 	}
 
+	instructorCourses, err := s.repo.GetInstructorCourses(ctx, fc.InstructorID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.Course{
 		ID:              fc.CourseID,
 		Title:           fc.Title,
@@ -293,9 +298,11 @@ func (s *Service) GetFullCoursePageInfoByCourseID(ctx context.Context, ID int32)
 			FullName:      fc.InstructorFullName,
 			AvatarURL:     *fc.InstructorAvatarUrl,
 			Description:   *fc.InstructorDescription,
-			StudentsCount: fc.InstructorStudentsCount,
-			CoursesCount:  fc.InstructorCoursesCount,
-			Rating:        float64(fc.InstructorRating),
+			StudentsCount: int32(fc.InstructorStudentsCount),
+			CoursesCount:  int32(fc.InstructorCoursesCount),
+			Rating:        fc.InstructorRating,
+			RatingsCount:  lo.FromPtrOr(fc.RatingsCount, 0),
+			Courses:       repackInstructorCoursesToModel(instructorCourses),
 		},
 		CreatedAt: fc.CourseCreatedAt.Time,
 		Status:    string(fc.CourseStatus),

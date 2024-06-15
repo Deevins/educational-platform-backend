@@ -100,10 +100,9 @@ func repackDBCoursesToShortModel(courses []*courses.GetUserCoursesRow) []*model.
 			CourseAvatarURL: lo.FromPtrOr(course.AvatarUrl, ""),
 			Subtitle:        lo.FromPtrOr(course.Subtitle, ""),
 			Rating:          lo.FromPtrOr(course.Rating, 0.0),
-
-			StudentsCount:  lo.FromPtrOr(course.StudentsCount, 0),
-			LecturesLength: time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
-			Description:    course.Description,
+			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
+			LecturesLength:  time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
+			Description:     course.Description,
 		})
 	}
 
@@ -123,31 +122,32 @@ func mapTypeToDBType(courseType string) courses.HumanResourcesCourseTypes {
 
 }
 
-func repackInstructorCoursesToModel(instructorCourses []*courses.GetInstructorCoursesRow) ([]*model.InstructorCourse, error) {
+func repackInstructorCoursesToModel(instructorCourses []*courses.GetInstructorCoursesRow) []*model.InstructorCourse {
 	var coursesList []*model.InstructorCourse
 	for _, c := range instructorCourses {
-
 		coursesList = append(coursesList, &model.InstructorCourse{
-			ID:        c.ID,
-			Title:     c.Title,
-			AvatarURL: *c.AvatarUrl,
-			Status:    string(c.Status),
+			ID:           c.ID,
+			Title:        c.Title,
+			AvatarURL:    lo.FromPtrOr(c.AvatarUrl, ""),
+			Rating:       lo.FromPtrOr(c.Rating, 0.0),
+			ReviewsCount: lo.FromPtrOr(c.RatingsCount, 0),
 		})
 	}
 
-	return coursesList, nil
+	return coursesList
 }
 
-func repackSearchInstructorCoursesByTitleToModel(courses []*courses.SearchInstructorCoursesByTitleRow) ([]*model.InstructorCourse, error) {
+func repackSearchInstructorCoursesByTitleToModel(courses []*courses.SearchInstructorCoursesByTitleRow) []*model.InstructorCourse {
 	var coursesList []*model.InstructorCourse
 	for _, c := range courses {
 		coursesList = append(coursesList, &model.InstructorCourse{
-			ID:        c.ID,
-			Title:     c.Title,
-			AvatarURL: *c.AvatarUrl,
-			Status:    string(c.Status),
+			ID:           c.ID,
+			Title:        c.Title,
+			AvatarURL:    lo.FromPtrOr(c.AvatarUrl, ""),
+			Rating:       lo.FromPtrOr(c.Rating, 0.0),
+			ReviewsCount: lo.FromPtrOr(c.RatingsCount, 0),
 		})
 	}
 
-	return coursesList, nil
+	return coursesList
 }
