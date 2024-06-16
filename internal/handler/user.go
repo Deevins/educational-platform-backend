@@ -91,21 +91,21 @@ type UpdateAvatarStruct struct {
 }
 
 func (h *Handler) updateAvatar(ctx *gin.Context) {
+	if ctx.Param("userID") == "" {
+		ctx.JSON(400, gin.H{"error": "userID is empty"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(ctx.Param("userID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		ctx.String(http.StatusBadRequest, "Unable to retrieve file: %v", err)
 		return
-	}
-
-	userIDStr := ctx.PostForm("user_id")
-	userID, err := strconv.Atoi(userIDStr)
-	if userID == 0 {
-		ctx.JSON(http.StatusBadRequest, httpResponses.ErrorResponse{
-			Status: http.StatusBadRequest,
-			Error:  "User ID is required",
-		})
-		return
-
 	}
 
 	// Открываем файл для чтения

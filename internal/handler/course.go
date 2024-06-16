@@ -75,6 +75,9 @@ func (h *Handler) getFullCoursePage(ctx *gin.Context) {
 		return
 	}
 
+	ctx.Header("Content-Disposition", "attachment; filename=filename.mp4")
+	ctx.Header("Content-Type", "video/mp4") // Замените на правильный MIME тип вашего файла
+
 	ctx.JSON(http.StatusOK, course)
 }
 
@@ -420,7 +423,7 @@ func (h *Handler) uploadCoursePreviewVideo(ctx *gin.Context) {
 		return
 	}
 
-	url, err := h.cs.UploadCourseAvatar(ctx, int32(courseID), S3.FileDataType{
+	url, err := h.cs.UploadCoursePreviewVideo(ctx, int32(courseID), S3.FileDataType{
 		FileName: file.Filename,
 		Data:     fileBytes,
 	})

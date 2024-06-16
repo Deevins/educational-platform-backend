@@ -50,12 +50,13 @@ func (s *Service) GetCourseBasicInfo(ctx context.Context, courseID int32) (*dto.
 
 func (s *Service) UpdateCourseBasicInfo(ctx context.Context, courseID int32, info *dto.CourseBasicInfo) error {
 	_, err := s.repo.AddCourseBasicInfo(ctx, &courses.AddCourseBasicInfoParams{
-		ID:          courseID,
-		Title:       info.Title,
-		Subtitle:    &info.Subtitle,
-		Description: info.Description,
-		Language:    &info.Language,
-		Level:       &info.Level,
+		ID:            courseID,
+		Title:         info.Title,
+		Subtitle:      &info.Subtitle,
+		CategoryTitle: info.Category,
+		Description:   info.Description,
+		Language:      &info.Language,
+		Level:         &info.Level,
 	})
 	if err != nil {
 		return err

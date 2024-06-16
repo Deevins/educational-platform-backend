@@ -66,7 +66,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue) // ok
 		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)                     // ok
 		user.PUT("/update-user-info", h.updateUserInfo)                                                // ok
-		user.POST("/update-avatar", h.updateAvatar)
+		user.POST("/upload-avatar/:userID", h.updateAvatar)
 		user.POST("/register-on-course", h.registerOnCourse)
 		user.GET("/check-if-user-registered-to-course", h.checkIfUserRegisteredToCourse)
 		user.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
@@ -79,7 +79,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/create-base", h.createCourseBase)                       // OK type must be 'course' or 'practice'
 		course.DELETE("/delete/:courseID", h.deleteCourse)                    // OK
 		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle) // OK
-		course.POST("/send-to-check/:courseID", h.sendToCheck)
+		course.POST("/send-for-approval/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
 		//course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
