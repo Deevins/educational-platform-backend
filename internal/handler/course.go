@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
 	"github.com/deevins/educational-platform-backend/pkg/httpResponses"
@@ -42,6 +43,8 @@ type CourseService interface {
 	SearchInstructionCoursesByTitle(ctx context.Context, instructorID int32, title string) ([]*model.InstructorCourse, error)
 	RemoveCourseByID(ctx context.Context, courseID int32) error
 	UpdateCourseGoals(ctx context.Context, courseID int32, goals *model.UpdateCourseGoals) error
+	UpdateCourseBasicInfo(ctx context.Context, courseID int32, info *dto.CourseBasicInfo) error
+	GetCourseBasicInfo(ctx context.Context, courseID int32) (*dto.CourseBasicInfo, error)
 	GetCourseSectionsWithDataByCourseID(ctx context.Context, courseID int32) ([]*model.CourseSection, error)
 
 	UpdateTestTitle(ctx context.Context, testID int32, title string) (string, error)
@@ -50,6 +53,8 @@ type CourseService interface {
 	RemoveLectureByID(ctx context.Context, lectureID int32) error
 	RemoveTestByID(ctx context.Context, testID int32) error
 	RemoveSectionByID(ctx context.Context, sectionID int32) error
+
+	GetCourseGoals(ctx context.Context, courseID int32) (*dto.CourseGoals, error)
 }
 
 func (h *Handler) getFullCoursePage(ctx *gin.Context) {
@@ -175,9 +180,9 @@ func (h *Handler) getAllCoursesByInstructorID(ctx *gin.Context) {
 }
 
 func (h *Handler) updateCourseGoals(ctx *gin.Context) {
-	var goals *model.UpdateCourseGoals
+	var input *model.UpdateCourseGoals
 
-	if ctx.ShouldBindJSON(goals) != nil {
+	if ctx.ShouldBindJSON(&input) != nil {
 		ctx.JSON(400, gin.H{"error": "invalid input"})
 		return
 	}
@@ -193,7 +198,7 @@ func (h *Handler) updateCourseGoals(ctx *gin.Context) {
 		return
 	}
 
-	err = h.cs.UpdateCourseGoals(ctx, int32(courseID), goals)
+	err = h.cs.UpdateCourseGoals(ctx, int32(courseID), input)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -780,4 +785,75 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 		Message: "File uploaded successfully",
 		Data:    url, // URL-адрес загруженного файла
 	})
+}
+
+func (h *Handler) updateCourseBasicInfo(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	var input *dto.CourseBasicInfo
+
+	if err = ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.cs.UpdateCourseBasicInfo(ctx, int32(courseID), input)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course info updated"})
+}
+
+func (h *Handler) getCourseBasicInfo(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	baseInfo, err := h.cs.GetCourseBasicInfo(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, baseInfo)
+}
+
+func (h *Handler) getCourseGoals(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	goals, err := h.cs.GetCourseGoals(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, goals)
+
 }

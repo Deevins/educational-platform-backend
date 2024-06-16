@@ -19,3 +19,7 @@ SELECT
     (SELECT COUNT(*) FROM human_resources.users) AS usersCount,
     (SELECT COUNT(*) FROM human_resources.users WHERE has_user_tried_instructor = false) AS studentsCount,
     (SELECT COUNT(*) FROM human_resources.courses) AS coursesCount;
+
+
+-- name: GetLevels :many
+SELECT l.id, l.name from human_resources.skill_levels l;

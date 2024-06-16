@@ -18,19 +18,19 @@ UPDATE human_resources.courses SET
         description = $3,
         language = $4,
         level = $5,
-        category_id = $6,
+        category_title = $6,
         updated_at = now()
                         WHERE id = $7 RETURNING id
 `
 
 type AddCourseBasicInfoParams struct {
-	Title       string
-	Subtitle    *string
-	Description string
-	Language    *string
-	Level       *string
-	CategoryID  *int32
-	ID          int32
+	Title         string
+	Subtitle      *string
+	Description   string
+	Language      *string
+	Level         *string
+	CategoryTitle string
+	ID            int32
 }
 
 func (q *Queries) AddCourseBasicInfo(ctx context.Context, arg *AddCourseBasicInfoParams) (int32, error) {
@@ -40,7 +40,7 @@ func (q *Queries) AddCourseBasicInfo(ctx context.Context, arg *AddCourseBasicInf
 		arg.Description,
 		arg.Language,
 		arg.Level,
-		arg.CategoryID,
+		arg.CategoryTitle,
 		arg.ID,
 	)
 	var id int32
@@ -86,7 +86,7 @@ INSERT INTO human_resources.courses (
                 title,
                 type,
                 author_id,
-                category_id,
+                category_title,
                 time_planned)
 VALUES ($1,
         $2,
@@ -97,11 +97,11 @@ VALUES ($1,
 `
 
 type CreateCourseBaseParams struct {
-	Title       string
-	Type        HumanResourcesCourseTypes
-	AuthorID    int32
-	CategoryID  *int32
-	TimePlanned *string
+	Title         string
+	Type          HumanResourcesCourseTypes
+	AuthorID      int32
+	CategoryTitle string
+	TimePlanned   *string
 }
 
 func (q *Queries) CreateCourseBase(ctx context.Context, arg *CreateCourseBaseParams) (int32, error) {
@@ -109,7 +109,7 @@ func (q *Queries) CreateCourseBase(ctx context.Context, arg *CreateCourseBasePar
 		arg.Title,
 		arg.Type,
 		arg.AuthorID,
-		arg.CategoryID,
+		arg.CategoryTitle,
 		arg.TimePlanned,
 	)
 	var id int32
@@ -507,6 +507,50 @@ func (q *Queries) GetCourseAvatarByID(ctx context.Context, id int32) (*string, e
 	return avatar_url, err
 }
 
+const getCourseBasicInfo = `-- name: GetCourseBasicInfo :one
+SELECT c.title, c.subtitle, c.description, c.language, c.level, c.category_title FROM human_resources.courses c WHERE id = $1
+`
+
+type GetCourseBasicInfoRow struct {
+	Title         string
+	Subtitle      *string
+	Description   string
+	Language      *string
+	Level         *string
+	CategoryTitle string
+}
+
+func (q *Queries) GetCourseBasicInfo(ctx context.Context, id int32) (*GetCourseBasicInfoRow, error) {
+	row := q.db.QueryRow(ctx, getCourseBasicInfo, id)
+	var i GetCourseBasicInfoRow
+	err := row.Scan(
+		&i.Title,
+		&i.Subtitle,
+		&i.Description,
+		&i.Language,
+		&i.Level,
+		&i.CategoryTitle,
+	)
+	return &i, err
+}
+
+const getCourseGoals = `-- name: GetCourseGoals :one
+SELECT course_goals, requirements, target_audience FROM human_resources.courses WHERE id = $1
+`
+
+type GetCourseGoalsRow struct {
+	CourseGoals    []string
+	Requirements   []string
+	TargetAudience []string
+}
+
+func (q *Queries) GetCourseGoals(ctx context.Context, id int32) (*GetCourseGoalsRow, error) {
+	row := q.db.QueryRow(ctx, getCourseGoals, id)
+	var i GetCourseGoalsRow
+	err := row.Scan(&i.CourseGoals, &i.Requirements, &i.TargetAudience)
+	return &i, err
+}
+
 const getCoursePreviewVideoByID = `-- name: GetCoursePreviewVideoByID :one
 SELECT preview_video_url FROM human_resources.courses WHERE id = $1
 `
@@ -619,7 +663,7 @@ SELECT
     c.requirements,
     c.target_audience,
     c.author_id,
-    cg.name AS category_title,
+    c.category_title AS category_title,
     u.full_name AS instructor_full_name,
     (SELECT COUNT(*) FROM human_resources.courses WHERE author_id = u.id) AS instructor_courses_count,
     (SELECT SUM(students_count) FROM human_resources.courses WHERE author_id = u.id) AS instructor_students_count,
@@ -632,7 +676,6 @@ SELECT
 FROM
     human_resources.courses c
     JOIN human_resources.users u ON c.author_id = u.id
-    JOIN human_resources.categories cg ON cg.id = c.category_id
 WHERE
     c.id = $1
 `

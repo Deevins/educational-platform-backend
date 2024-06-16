@@ -3,6 +3,7 @@ package course
 import (
 	"context"
 	"encoding/json"
+	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/handler"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses"
@@ -16,6 +17,51 @@ var _ handler.CourseService = &Service{}
 type Service struct {
 	repo courses.Querier
 	s3   S3.Client
+}
+
+func (s *Service) GetCourseGoals(ctx context.Context, courseID int32) (*dto.CourseGoals, error) {
+	course, err := s.repo.GetCourseGoals(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.CourseGoals{
+		Goals:          course.CourseGoals,
+		Requirements:   course.Requirements,
+		TargetAudience: course.TargetAudience,
+	}, nil
+}
+
+func (s *Service) GetCourseBasicInfo(ctx context.Context, courseID int32) (*dto.CourseBasicInfo, error) {
+	course, err := s.repo.GetCourseBasicInfo(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.CourseBasicInfo{
+		Title:       course.Title,
+		Subtitle:    lo.FromPtrOr(course.Subtitle, ""),
+		Description: course.Description,
+		Category:    course.CategoryTitle,
+		Language:    lo.FromPtrOr(course.Language, ""),
+		Level:       lo.FromPtrOr(course.Level, ""),
+	}, nil
+}
+
+func (s *Service) UpdateCourseBasicInfo(ctx context.Context, courseID int32, info *dto.CourseBasicInfo) error {
+	_, err := s.repo.AddCourseBasicInfo(ctx, &courses.AddCourseBasicInfoParams{
+		ID:          courseID,
+		Title:       info.Title,
+		Subtitle:    &info.Subtitle,
+		Description: info.Description,
+		Language:    &info.Language,
+		Level:       &info.Level,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) UpdateTestTitle(ctx context.Context, testID int32, title string) (string, error) {
@@ -170,11 +216,11 @@ func (s *Service) RemoveCourseByID(ctx context.Context, courseID int32) error {
 
 func (s *Service) CreateCourseBase(ctx context.Context, base *model.CourseBase) (int32, error) {
 	courseID, err := s.repo.CreateCourseBase(ctx, &courses.CreateCourseBaseParams{
-		Title:       base.Title,
-		Type:        mapTypeToDBType(base.Type),
-		AuthorID:    base.AuthorID,
-		CategoryID:  &base.CategoryID,
-		TimePlanned: &base.TimePlanned,
+		Title:         base.Title,
+		Type:          mapTypeToDBType(base.Type),
+		AuthorID:      base.AuthorID,
+		CategoryTitle: base.CategoryTitle,
+		TimePlanned:   &base.TimePlanned,
 	})
 	if err != nil {
 		return 0, err
@@ -304,10 +350,10 @@ func (s *Service) GetFullCoursePageInfoByCourseID(ctx context.Context, ID int32)
 			RatingsCount:  lo.FromPtrOr(fc.RatingsCount, 0),
 			Courses:       repackInstructorCoursesToModel(instructorCourses),
 		},
-		CreatedAt: fc.CourseCreatedAt.Time,
-		Status:    string(fc.CourseStatus),
-		Reviews:   repackCourseReviews(reviews),
-		Category:  fc.CategoryTitle,
+		CreatedAt:     fc.CourseCreatedAt.Time,
+		Status:        string(fc.CourseStatus),
+		Reviews:       repackCourseReviews(reviews),
+		CategoryTitle: fc.CategoryTitle,
 	}, nil
 }
 

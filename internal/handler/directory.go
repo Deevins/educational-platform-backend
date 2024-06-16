@@ -22,6 +22,7 @@ func (h *Handler) getLanguages(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, languages)
 }
+
 func (h *Handler) getMetasCount(ctx *gin.Context) {
 	metasCount, err := h.ds.GetMetasCount(ctx)
 	if err != nil {
@@ -32,4 +33,13 @@ func (h *Handler) getMetasCount(ctx *gin.Context) {
 }
 
 func (h *Handler) filterByCategoryAndSubcategory(ctx *gin.Context) {
+}
+
+func (h *Handler) getLevels(ctx *gin.Context) {
+	levels, err := h.ds.GetLevels(ctx)
+	if err != nil {
+		return
+	}
+
+	ctx.JSON(http.StatusOK, levels)
 }

@@ -24,7 +24,7 @@ type Course struct {
 	CreatedAt       time.Time         `json:"created_at"`
 	Status          string            `json:"status"`
 	Reviews         []*CourseReview   `json:"reviews"`
-	Category        string            `json:"category"`
+	CategoryTitle   string            `json:"category_title"`
 }
 
 // CourseInstructor represents an instructor of a course
@@ -80,11 +80,11 @@ type GetAllCoursesResponse struct {
 }
 
 type CourseBase struct {
-	AuthorID    int32  `json:"author_id"`
-	Type        string `json:"type"`
-	Title       string `json:"title"`
-	CategoryID  int32  `json:"category_id"`
-	TimePlanned string `json:"time_planned"`
+	AuthorID      int32  `json:"author_id"`
+	Type          string `json:"type"`
+	Title         string `json:"title"`
+	CategoryTitle string `json:"category_title"`
+	TimePlanned   string `json:"time_planned"`
 }
 
 type CourseIDWithResourceLink struct {

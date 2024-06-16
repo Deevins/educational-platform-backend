@@ -30,6 +30,7 @@ type DirectoryService interface {
 	GetCategoriesWithSubCategories(ctx context.Context) ([]*model.Category, error)
 	GetLanguages(ctx context.Context) ([]*model.Language, error)
 	GetMetasCount(ctx context.Context) (*model.MetasCount, error)
+	GetLevels(ctx context.Context) ([]*model.Level, error)
 }
 
 type Handler struct {
@@ -78,7 +79,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/create-base", h.createCourseBase)                       // OK type must be 'course' or 'practice'
 		course.DELETE("/delete/:courseID", h.deleteCourse)                    // OK
 		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle) // OK
-		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
 		course.POST("/send-to-check/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
@@ -88,6 +88,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/upload-course-avatar/:courseID", h.uploadCourseAvatar)
 		course.POST("/upload-course-preview-video/:courseID", h.uploadCoursePreviewVideo)
 		course.GET("/get-course-materials/:courseID", h.getCourseMaterials)
+
+		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
+		course.GET("/get-course-goals/:courseID", h.getCourseGoals)
+
+		course.GET("/get-course-basic-info/:courseID", h.getCourseBasicInfo)
+		course.PUT("/update-course-basic-info/:courseID", h.updateCourseBasicInfo)
 
 		course.POST("/create-section/:courseID", h.createSection)
 		course.POST("/create-lecture/:sectionID", h.createLecture)
@@ -105,18 +111,19 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		directories.GET("/categories", h.getCategories)
 		directories.GET("/languages", h.getLanguages)
+		directories.GET("/levels", h.getLevels)
 		directories.GET("/meta-counts", h.getMetasCount)
 		//directories.GET("/filter-by-category-and-subcategory", h.filterByCategoryAndSubcategory)
 	}
 
 	threads := router.Group("/threads")
 	{
-		threads.GET("/get-all-threads", h.getAllThreads)
-		threads.POST("/create-thread", h.createThread)
-		threads.POST("/answer-in-thread", h.answerInThread)
-		threads.GET("/search-threads-by-title/:query", h.searchThreadsByTitle)
-		threads.GET("/get-one-thread", h.getOneThread) // here we must get all threads messages
-		threads.POST("/add-tag-to-thread", h.addTagToThread)
+		threads.GET("/get-all", h.getAllThreads)
+		threads.POST("/create", h.createThread)
+		threads.POST("/answer", h.answerInThread)
+		threads.GET("/search-by-title/:query", h.searchThreadsByTitle)
+		threads.GET("/get-one", h.getOneThread) // here we must get all threads messages
+		threads.POST("/add-tag-to", h.addTagToThread)
 	}
 
 	return router

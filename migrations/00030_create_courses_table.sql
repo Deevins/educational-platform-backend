@@ -11,7 +11,7 @@ CREATE TABLE human_resources.courses (
     students_count INT DEFAULT 0,
     ratings_count INT DEFAULT 0,
     rating FLOAT DEFAULT 0,
-    category_id int default 0,
+    category_title VARCHAR(255) default '',
     subcategory_id int default 0,
     language VARCHAR(255) default 'Русский',
     level VARCHAR(255) default 'Начинающий',

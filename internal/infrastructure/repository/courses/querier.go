@@ -21,6 +21,8 @@ type Querier interface {
 	GetAllPendingCourses(ctx context.Context) ([]*GetAllPendingCoursesRow, error)
 	GetAllReadyCourses(ctx context.Context) ([]*GetAllReadyCoursesRow, error)
 	GetCourseAvatarByID(ctx context.Context, id int32) (*string, error)
+	GetCourseBasicInfo(ctx context.Context, id int32) (*GetCourseBasicInfoRow, error)
+	GetCourseGoals(ctx context.Context, id int32) (*GetCourseGoalsRow, error)
 	GetCoursePreviewVideoByID(ctx context.Context, id int32) (*string, error)
 	GetCourseReviewsByCourseID(ctx context.Context, id int32) ([]*GetCourseReviewsByCourseIDRow, error)
 	GetCoursesAvatarsByIDs(ctx context.Context, dollar_1 []int32) ([]*GetCoursesAvatarsByIDsRow, error)

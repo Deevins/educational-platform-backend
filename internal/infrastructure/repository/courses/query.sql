@@ -3,17 +3,20 @@ INSERT INTO human_resources.courses (
                 title,
                 type,
                 author_id,
-                category_id,
+                category_title,
                 time_planned)
 VALUES (@title,
         @type,
         @author_id,
-        @category_id,
+        @category_title,
         @time_planned
        ) RETURNING id;
 
 -- name: UpdateCourseGoals :one
 UPDATE human_resources.courses SET course_goals = @course_goals, requirements = @requirements, target_audience = @target_audience, updated_at = now() WHERE id = @id RETURNING id;
+
+-- name: GetCourseGoals :one
+SELECT course_goals, requirements, target_audience FROM human_resources.courses WHERE id = @id;
 
 -- name: AddCourseBasicInfo :one
 UPDATE human_resources.courses SET
@@ -22,9 +25,12 @@ UPDATE human_resources.courses SET
         description = @description,
         language = @language,
         level = @level,
-        category_id = @category_id,
+        category_title = @category_title,
         updated_at = now()
                         WHERE id = @id RETURNING id;
+
+-- name: GetCourseBasicInfo :one
+SELECT c.title, c.subtitle, c.description, c.language, c.level, c.category_title FROM human_resources.courses c WHERE id = @id;
 
 -- name: GetUserCourses :many
 SELECT c.id, c.title, c.description,
@@ -255,7 +261,7 @@ SELECT
     c.requirements,
     c.target_audience,
     c.author_id,
-    cg.name AS category_title,
+    c.category_title AS category_title,
     u.full_name AS instructor_full_name,
     (SELECT COUNT(*) FROM human_resources.courses WHERE author_id = u.id) AS instructor_courses_count,
     (SELECT SUM(students_count) FROM human_resources.courses WHERE author_id = u.id) AS instructor_students_count,
@@ -268,7 +274,6 @@ SELECT
 FROM
     human_resources.courses c
     JOIN human_resources.users u ON c.author_id = u.id
-    JOIN human_resources.categories cg ON cg.id = c.category_id
 WHERE
     c.id = @id;
 

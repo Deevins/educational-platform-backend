@@ -84,6 +84,35 @@ func (q *Queries) GetLanguages(ctx context.Context) ([]*GetLanguagesRow, error) 
 	return items, nil
 }
 
+const getLevels = `-- name: GetLevels :many
+SELECT l.id, l.name from human_resources.skill_levels l
+`
+
+type GetLevelsRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) GetLevels(ctx context.Context) ([]*GetLevelsRow, error) {
+	rows, err := q.db.Query(ctx, getLevels)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetLevelsRow
+	for rows.Next() {
+		var i GetLevelsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMetasCount = `-- name: GetMetasCount :one
 SELECT
     (SELECT COUNT(*) FROM human_resources.users) AS usersCount,

@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	GetCategoriesAndSubcategories(ctx context.Context) ([]*GetCategoriesAndSubcategoriesRow, error)
 	GetLanguages(ctx context.Context) ([]*GetLanguagesRow, error)
+	GetLevels(ctx context.Context) ([]*GetLevelsRow, error)
 	GetMetasCount(ctx context.Context) (*GetMetasCountRow, error)
 }
 

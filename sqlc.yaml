@@ -12,6 +12,8 @@ sql:
       overrides:
       - column: human_resources.users.instructor_rating
         go_type: float64
+      - column: human_resources.courses.category_title
+        go_type: string
       package: users
       sql_package: pgx/v5
   queries: internal\infrastructure\repository\users\query.sql

@@ -11,6 +11,11 @@ type Language struct {
 	Name string `json:"name"`
 }
 
+type Level struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
 type MetasCount struct {
 	RegistrationsCount int32 `json:"registrations_count"`
 	CoursesCount       int32 `json:"courses_count"`

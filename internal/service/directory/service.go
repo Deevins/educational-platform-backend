@@ -22,6 +22,22 @@ type Service struct {
 	repo directories.Querier
 }
 
+func (s *Service) GetLevels(ctx context.Context) ([]*model.Level, error) {
+	levels, err := s.repo.GetLevels(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get levels")
+	}
+	output := make([]*model.Level, 0)
+	for _, level := range levels {
+		output = append(output, &model.Level{
+			ID:   level.ID,
+			Name: level.Name,
+		})
+	}
+
+	return output, nil
+}
+
 func (s *Service) GetMetasCount(ctx context.Context) (*model.MetasCount, error) {
 	counts, err := s.repo.GetMetasCount(ctx)
 	if err != nil {

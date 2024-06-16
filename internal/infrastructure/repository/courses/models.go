@@ -156,7 +156,7 @@ type HumanResourcesCourse struct {
 	StudentsCount          *int32
 	RatingsCount           *int32
 	Rating                 *float64
-	CategoryID             *int32
+	CategoryTitle          string
 	SubcategoryID          *int32
 	Language               *string
 	Level                  *string
