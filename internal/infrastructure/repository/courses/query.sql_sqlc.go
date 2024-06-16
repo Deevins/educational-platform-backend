@@ -58,6 +58,16 @@ func (q *Queries) ApproveCourse(ctx context.Context, id int32) (int32, error) {
 	return id, err
 }
 
+const cancelPublishingCourse = `-- name: CancelPublishingCourse :one
+UPDATE human_resources.courses SET status = 'DRAFT', updated_at = now() WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) CancelPublishingCourse(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, cancelPublishingCourse, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createAnswer = `-- name: CreateAnswer :one
 INSERT INTO human_resources.tests_questions_answers (question_id, body, description, is_correct) VALUES ($1, $2, $3, $4) RETURNING id
 `
@@ -899,6 +909,118 @@ func (q *Queries) GetLectureByID(ctx context.Context, id int32) (*GetLectureByID
 	return &i, err
 }
 
+const getLecturesByCourseID = `-- name: GetLecturesByCourseID :many
+SELECT
+    s.id AS section_id,
+    l.id AS lecture_id,
+    l.title AS lecture_title,
+    l.description AS lecture_description,
+    l.video_url AS lecture_video_url,
+    l.serial_number AS lecture_serial_number,
+    r.id AS resource_id,
+    r.title AS resource_title,
+    r.extension AS resource_extension,
+    r.resource_url AS resource_url
+FROM
+    human_resources.sections s
+        LEFT JOIN human_resources.lectures l ON s.id = l.section_id
+        LEFT JOIN human_resources.lectures_resources r ON l.id = r.lecture_id
+WHERE
+    s.course_id = $1
+  AND l.id IS NOT NULL
+`
+
+type GetLecturesByCourseIDRow struct {
+	SectionID           int32
+	LectureID           *int32
+	LectureTitle        *string
+	LectureDescription  *string
+	LectureVideoUrl     *string
+	LectureSerialNumber *int32
+	ResourceID          *int32
+	ResourceTitle       *string
+	ResourceExtension   *string
+	ResourceUrl         *string
+}
+
+func (q *Queries) GetLecturesByCourseID(ctx context.Context, courseID int32) ([]*GetLecturesByCourseIDRow, error) {
+	rows, err := q.db.Query(ctx, getLecturesByCourseID, courseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetLecturesByCourseIDRow
+	for rows.Next() {
+		var i GetLecturesByCourseIDRow
+		if err := rows.Scan(
+			&i.SectionID,
+			&i.LectureID,
+			&i.LectureTitle,
+			&i.LectureDescription,
+			&i.LectureVideoUrl,
+			&i.LectureSerialNumber,
+			&i.ResourceID,
+			&i.ResourceTitle,
+			&i.ResourceExtension,
+			&i.ResourceUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSectionsByCourseID = `-- name: GetSectionsByCourseID :many
+SELECT
+    id AS section_id,
+    title AS section_title,
+    description AS section_description,
+    serial_number AS section_serial_number,
+    course_id
+FROM
+    human_resources.sections
+WHERE
+    course_id = $1
+`
+
+type GetSectionsByCourseIDRow struct {
+	SectionID           int32
+	SectionTitle        string
+	SectionDescription  string
+	SectionSerialNumber int32
+	CourseID            int32
+}
+
+func (q *Queries) GetSectionsByCourseID(ctx context.Context, courseID int32) ([]*GetSectionsByCourseIDRow, error) {
+	rows, err := q.db.Query(ctx, getSectionsByCourseID, courseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetSectionsByCourseIDRow
+	for rows.Next() {
+		var i GetSectionsByCourseIDRow
+		if err := rows.Scan(
+			&i.SectionID,
+			&i.SectionTitle,
+			&i.SectionDescription,
+			&i.SectionSerialNumber,
+			&i.CourseID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSectionsWithLecturesAndTestsByCourseID = `-- name: GetSectionsWithLecturesAndTestsByCourseID :many
 WITH recursive_section AS (
     SELECT
@@ -910,6 +1032,7 @@ WITH recursive_section AS (
         l.title AS lecture_title,
         l.description AS lecture_description,
         l.video_url AS lecture_video_url,
+        l.serial_number AS lecture_serial_number,
         t.id AS test_id,
         t.name AS test_name,
         q.id AS question_id,
@@ -917,11 +1040,17 @@ WITH recursive_section AS (
         a.id AS answer_id,
         a.body AS answer_body,
         a.is_correct AS answer_is_correct,
-        a.description AS answer_description
+        a.description AS answer_description,
+        r.id AS resource_id,
+        r.title AS resource_title,
+        r.extension AS resource_extension,
+        r.resource_url AS resource_url
     FROM
         human_resources.sections s
             LEFT JOIN
         human_resources.lectures l ON s.id = l.section_id
+            LEFT JOIN
+        human_resources.lectures_resources r ON l.id = r.lecture_id
             LEFT JOIN
         human_resources.tests t ON s.id = t.section_id
             LEFT JOIN
@@ -935,46 +1064,55 @@ SELECT
     section_id,
     section_title,
     section_description,
-    json_agg(
-            json_build_object(
-                    'lecture_id', lecture_id,
-                    'lecture_title', lecture_title,
-                    'lecture_description', lecture_description,
-                    'lecture_video_url', lecture_video_url
-            )
-    ) AS lectures,
-    json_agg(
-            json_build_object(
-                    'test_id', test_id,
-                    'test_name', test_name,
-                    'questions', json_agg(
-                            json_build_object(
-                                    'question_id', question_id,
-                                    'question_body', question_body,
-                                    'answers', json_agg(
-                                            json_build_object(
-                                                    'answer_id', answer_id,
-                                                    'answer_body', answer_body,
-                                                    'answer_is_correct', answer_is_correct,
-                                                    'answer_description', answer_description
-                                            )
-                                               )
-                            )
-                                    )
-            )
-    ) AS tests
+    lecture_id,
+    lecture_title,
+    lecture_description,
+    lecture_video_url,
+    lecture_serial_number,
+    resource_id,
+    resource_title,
+    resource_extension,
+    resource_url,
+    test_id,
+    test_name,
+    question_id,
+    question_body,
+    answer_id,
+    answer_body,
+    answer_is_correct,
+    answer_description
 FROM
     recursive_section
-GROUP BY
-    section_id, section_title, section_description
+ORDER BY
+    section_id,
+    lecture_id,
+    resource_id,
+    test_id,
+    question_id,
+    answer_id
 `
 
 type GetSectionsWithLecturesAndTestsByCourseIDRow struct {
-	SectionID          int32
-	SectionTitle       string
-	SectionDescription string
-	Lectures           []byte
-	Tests              []byte
+	SectionID           int32
+	SectionTitle        string
+	SectionDescription  string
+	LectureID           *int32
+	LectureTitle        *string
+	LectureDescription  *string
+	LectureVideoUrl     *string
+	LectureSerialNumber *int32
+	ResourceID          *int32
+	ResourceTitle       *string
+	ResourceExtension   *string
+	ResourceUrl         *string
+	TestID              *int32
+	TestName            *string
+	QuestionID          *int32
+	QuestionBody        *string
+	AnswerID            *int32
+	AnswerBody          *string
+	AnswerIsCorrect     *bool
+	AnswerDescription   *string
 }
 
 func (q *Queries) GetSectionsWithLecturesAndTestsByCourseID(ctx context.Context, courseID int32) ([]*GetSectionsWithLecturesAndTestsByCourseIDRow, error) {
@@ -990,8 +1128,92 @@ func (q *Queries) GetSectionsWithLecturesAndTestsByCourseID(ctx context.Context,
 			&i.SectionID,
 			&i.SectionTitle,
 			&i.SectionDescription,
-			&i.Lectures,
-			&i.Tests,
+			&i.LectureID,
+			&i.LectureTitle,
+			&i.LectureDescription,
+			&i.LectureVideoUrl,
+			&i.LectureSerialNumber,
+			&i.ResourceID,
+			&i.ResourceTitle,
+			&i.ResourceExtension,
+			&i.ResourceUrl,
+			&i.TestID,
+			&i.TestName,
+			&i.QuestionID,
+			&i.QuestionBody,
+			&i.AnswerID,
+			&i.AnswerBody,
+			&i.AnswerIsCorrect,
+			&i.AnswerDescription,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTestsByCourseID = `-- name: GetTestsByCourseID :many
+SELECT
+    s.id AS section_id,
+    t.id AS test_id,
+    t.name AS test_name,
+    t.description AS test_description,
+    t.serial_number AS test_serial_number,
+    q.id AS question_id,
+    q.body AS question_body,
+    a.id AS answer_id,
+    a.body AS answer_body,
+    a.is_correct AS answer_is_correct,
+    a.description AS answer_description
+FROM
+    human_resources.sections s
+        LEFT JOIN human_resources.tests t ON s.id = t.section_id
+        LEFT JOIN human_resources.tests_questions q ON t.id = q.test_id
+        LEFT JOIN human_resources.tests_questions_answers a ON q.id = a.question_id
+WHERE
+    s.course_id = $1
+  AND t.id IS NOT NULL
+`
+
+type GetTestsByCourseIDRow struct {
+	SectionID         int32
+	TestID            *int32
+	TestName          *string
+	TestDescription   *string
+	TestSerialNumber  *int32
+	QuestionID        *int32
+	QuestionBody      *string
+	AnswerID          *int32
+	AnswerBody        *string
+	AnswerIsCorrect   *bool
+	AnswerDescription *string
+}
+
+func (q *Queries) GetTestsByCourseID(ctx context.Context, courseID int32) ([]*GetTestsByCourseIDRow, error) {
+	rows, err := q.db.Query(ctx, getTestsByCourseID, courseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetTestsByCourseIDRow
+	for rows.Next() {
+		var i GetTestsByCourseIDRow
+		if err := rows.Scan(
+			&i.SectionID,
+			&i.TestID,
+			&i.TestName,
+			&i.TestDescription,
+			&i.TestSerialNumber,
+			&i.QuestionID,
+			&i.QuestionBody,
+			&i.AnswerID,
+			&i.AnswerBody,
+			&i.AnswerIsCorrect,
+			&i.AnswerDescription,
 		); err != nil {
 			return nil, err
 		}

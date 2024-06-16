@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	AddCourseBasicInfo(ctx context.Context, arg *AddCourseBasicInfoParams) (int32, error)
 	ApproveCourse(ctx context.Context, id int32) (int32, error)
+	CancelPublishingCourse(ctx context.Context, id int32) (int32, error)
 	CreateAnswer(ctx context.Context, arg *CreateAnswerParams) (int32, error)
 	CreateCourseBase(ctx context.Context, arg *CreateCourseBaseParams) (int32, error)
 	CreateLecture(ctx context.Context, arg *CreateLectureParams) (int32, error)
@@ -30,7 +31,10 @@ type Querier interface {
 	GetFullCourseInfoWithInstructorByCourseID(ctx context.Context, id int32) (*GetFullCourseInfoWithInstructorByCourseIDRow, error)
 	GetInstructorCourses(ctx context.Context, authorID int32) ([]*GetInstructorCoursesRow, error)
 	GetLectureByID(ctx context.Context, id int32) (*GetLectureByIDRow, error)
+	GetLecturesByCourseID(ctx context.Context, courseID int32) ([]*GetLecturesByCourseIDRow, error)
+	GetSectionsByCourseID(ctx context.Context, courseID int32) ([]*GetSectionsByCourseIDRow, error)
 	GetSectionsWithLecturesAndTestsByCourseID(ctx context.Context, courseID int32) ([]*GetSectionsWithLecturesAndTestsByCourseIDRow, error)
+	GetTestsByCourseID(ctx context.Context, courseID int32) ([]*GetTestsByCourseIDRow, error)
 	GetUserCourses(ctx context.Context, userID int32) ([]*GetUserCoursesRow, error)
 	RejectCourse(ctx context.Context, id int32) (int32, error)
 	RemoveAnswer(ctx context.Context, id int32) (int32, error)

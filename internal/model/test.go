@@ -1,9 +1,11 @@
 package model
 
 type Test struct {
-	TestID    int32      `json:"test_id"`
-	TestName  string     `json:"test_name"`
-	Questions []Question `json:"questions"`
+	TestID       int32      `json:"test_id"`
+	TestName     string     `json:"test_name"`
+	Description  string     `json:"description"`
+	SerialNumber int32      `json:"serial_number"`
+	Questions    []Question `json:"questions"`
 }
 
 type Question struct {

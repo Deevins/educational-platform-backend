@@ -55,17 +55,17 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	authGroup := router.Group("/auth")
 	{
-		authGroup.POST("/sign-up", h.signUp) // ok
-		authGroup.POST("/sign-in", h.signIn) // ok
+		authGroup.POST("/sign-up", h.signUp)
+		authGroup.POST("/sign-in", h.signIn)
 	}
 
 	user := router.Group("/users")
 	{
 		user.GET("/get-one/:userID", h.getOneUser)
-		user.GET("/has-user-tried-instructor/:userID", h.hasUserTriedInstructor)                       // ok
-		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue) // ok
-		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)                     // ok
-		user.PUT("/update-user-info", h.updateUserInfo)                                                // ok
+		user.GET("/has-user-tried-instructor/:userID", h.hasUserTriedInstructor)
+		user.POST("/set-has-user-tried-instructor-to-true/:userID", h.setHasUserTriedInstructorToTrue)
+		user.POST("/add-user-teaching-experience", h.updateUserTeachingExperience)
+		user.PUT("/update-user-info", h.updateUserInfo)
 		user.POST("/upload-avatar/:userID", h.updateAvatar)
 		user.POST("/register-on-course", h.registerOnCourse)
 		user.GET("/check-if-user-registered-to-course", h.checkIfUserRegisteredToCourse)
@@ -73,12 +73,13 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	}
 	course := router.Group("/courses")
 	{
-		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID)   // для вывода курсов по id пользователя у него на странице или еще где ok
-		course.GET("/get-all", h.getAllCoursesWithFilters)                    // OK courses with READY status for all courses page
-		course.GET("/get-latest-eight", h.getLatestEightCourses)              // OK
-		course.POST("/create-base", h.createCourseBase)                       // OK type must be 'course' or 'practice'
-		course.DELETE("/delete/:courseID", h.deleteCourse)                    // OK
-		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle) // OK
+		course.GET("/get-courses-by-user-id/:userID", h.getCoursesByUserID) // для вывода курсов по id пользователя у него на странице или еще где ok
+		course.GET("/get-all", h.getAllCoursesWithFilters)                  // OK courses with READY status for all courses page
+		course.GET("/get-latest-eight", h.getLatestEightCourses)
+		course.POST("/create-base", h.createCourseBase) // OK type must be 'course' or 'practice'
+		course.DELETE("/delete/:courseID", h.deleteCourse)
+		course.POST("/cancel-publishing/:courseID", h.cancelPublishing)
+		course.GET("/search-courses-by-title/:query", h.searchCoursesByTitle)
 		course.POST("/send-for-approval/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
@@ -87,7 +88,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
 		course.POST("/upload-course-avatar/:courseID", h.uploadCourseAvatar)
 		course.POST("/upload-course-preview-video/:courseID", h.uploadCoursePreviewVideo)
-		course.GET("/get-course-materials/:courseID", h.getCourseMaterials)
 
 		course.PUT("/update-course-goals/:courseID", h.updateCourseGoals)
 		course.GET("/get-course-goals/:courseID", h.getCourseGoals)
@@ -95,6 +95,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.GET("/get-course-basic-info/:courseID", h.getCourseBasicInfo)
 		course.PUT("/update-course-basic-info/:courseID", h.updateCourseBasicInfo)
 
+		course.GET("/get-course-materials/:courseID", h.getCourseMaterials)
 		course.POST("/create-section/:courseID", h.createSection)
 		course.POST("/create-lecture/:sectionID", h.createLecture)
 		course.POST("/create-test/:sectionID", h.createTest)

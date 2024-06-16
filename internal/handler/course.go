@@ -60,6 +60,8 @@ type CourseService interface {
 	RemoveSectionByID(ctx context.Context, sectionID int32) error
 
 	GetCourseGoals(ctx context.Context, courseID int32) (*dto.CourseGoals, error)
+
+	CancelPublishing(ctx context.Context, courseID int32) error
 }
 
 func (h *Handler) getFullCoursePage(ctx *gin.Context) {
@@ -922,13 +924,52 @@ func (h *Handler) removeLectureVideo(ctx *gin.Context) {
 		return
 	}
 
-	videoURL, err := h.cs.UploadCourseLecture(ctx, int32(lectureID), S3.FileDataType{}, lengthInterval)
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	err = h.cs.RemoveCourseLectureVideo(ctx, int32(courseID), int32(lectureID))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload lecture"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"videoURL": videoURL})
+	ctx.JSON(http.StatusOK, gin.H{"message": "lecture video removed"})
+}
+
+func (h *Handler) cancelPublishing(ctx *gin.Context) {
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	course, _ := h.cs.GetFullCoursePageInfoByCourseID(ctx, int32(courseID))
+
+	if course.Status != "READY" {
+		ctx.JSON(400, gin.H{"error": "course is not ready"})
+		return
+	}
+
+	err = h.cs.CancelPublishing(ctx, int32(courseID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "course publishing canceled"})
 }
 
 type FFProbeOutput struct {

@@ -151,3 +151,95 @@ func repackSearchInstructorCoursesByTitleToModel(courses []*courses.SearchInstru
 
 	return coursesList
 }
+
+func repackData(
+	sections []*courses.GetSectionsByCourseIDRow,
+	tests []*courses.GetTestsByCourseIDRow,
+	lectures []*courses.GetLecturesByCourseIDRow,
+) []*model.CourseSection {
+	sectionMap := make(map[int32]*model.CourseSection)
+
+	for _, sec := range sections {
+		section := &model.CourseSection{
+			SectionID:          sec.SectionID,
+			SectionTitle:       sec.SectionTitle,
+			SectionDescription: sec.SectionDescription,
+			Lectures:           []*model.Lecture{},
+			Tests:              []*model.Test{},
+		}
+		sectionMap[sec.SectionID] = section
+	}
+
+	for _, lec := range lectures {
+		section, exists := sectionMap[lec.SectionID]
+		if exists {
+			lecture := &model.Lecture{
+				ID:           lo.FromPtr(lec.LectureID),
+				SerialNumber: lo.FromPtrOr(lec.LectureSerialNumber, 0),
+				Title:        lo.FromPtrOr(lec.LectureTitle, ""),
+				Description:  lo.FromPtrOr(lec.LectureDescription, ""),
+				VideoURL:     lo.FromPtrOr(lec.LectureVideoUrl, ""),
+			}
+			section.Lectures = append(section.Lectures, lecture)
+		}
+	}
+
+	for _, tst := range tests {
+		section, exists := sectionMap[tst.SectionID]
+		if exists {
+			var test *model.Test
+			for _, t := range section.Tests {
+				if t.TestID == lo.FromPtr(tst.TestID) {
+					test = t
+					break
+				}
+			}
+
+			if test == nil {
+				test = &model.Test{
+					TestID:       lo.FromPtrOr(tst.TestID, 0),
+					TestName:     lo.FromPtrOr(tst.TestName, ""),
+					Description:  lo.FromPtrOr(tst.TestDescription, ""),
+					SerialNumber: lo.FromPtrOr(tst.TestSerialNumber, 0),
+					Questions:    []model.Question{},
+				}
+				section.Tests = append(section.Tests, test)
+			}
+
+			if tst.QuestionID != nil {
+				var question *model.Question
+				for i := range test.Questions {
+					if test.Questions[i].QuestionBody == lo.FromPtrOr(tst.QuestionBody, "") {
+						question = &test.Questions[i]
+						break
+					}
+				}
+
+				if question == nil {
+					newQuestion := model.Question{
+						QuestionBody: lo.FromPtrOr(tst.QuestionBody, ""),
+						Answers:      []model.Response{},
+					}
+					test.Questions = append(test.Questions, newQuestion)
+					question = &test.Questions[len(test.Questions)-1]
+				}
+
+				if tst.AnswerID != nil {
+					answer := model.Response{
+						ResponseText: lo.FromPtrOr(tst.AnswerBody, ""),
+						Description:  lo.FromPtrOr(tst.AnswerDescription, ""),
+						IsCorrect:    lo.FromPtrOr(tst.AnswerIsCorrect, false),
+					}
+					question.Answers = append(question.Answers, answer)
+				}
+			}
+		}
+	}
+
+	var courseSections []*model.CourseSection
+	for _, section := range sectionMap {
+		courseSections = append(courseSections, section)
+	}
+
+	return courseSections
+}

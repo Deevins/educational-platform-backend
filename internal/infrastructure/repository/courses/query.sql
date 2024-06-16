@@ -251,6 +251,9 @@ WHERE to_tsvector('russian', c.title) @@ plainto_tsquery('russian', @title)
 -- name: RemoveCourse :one
 DELETE FROM human_resources.courses WHERE id = @id RETURNING id;
 
+-- name: CancelPublishingCourse :one
+UPDATE human_resources.courses SET status = 'DRAFT', updated_at = now() WHERE id = @id RETURNING id;
+
 -- name: GetFullCourseInfoWithInstructorByCourseID :one
 SELECT
     c.id AS course_id,
@@ -316,6 +319,7 @@ WITH recursive_section AS (
         l.title AS lecture_title,
         l.description AS lecture_description,
         l.video_url AS lecture_video_url,
+        l.serial_number AS lecture_serial_number,
         t.id AS test_id,
         t.name AS test_name,
         q.id AS question_id,
@@ -323,11 +327,17 @@ WITH recursive_section AS (
         a.id AS answer_id,
         a.body AS answer_body,
         a.is_correct AS answer_is_correct,
-        a.description AS answer_description
+        a.description AS answer_description,
+        r.id AS resource_id,
+        r.title AS resource_title,
+        r.extension AS resource_extension,
+        r.resource_url AS resource_url
     FROM
         human_resources.sections s
             LEFT JOIN
         human_resources.lectures l ON s.id = l.section_id
+            LEFT JOIN
+        human_resources.lectures_resources r ON l.id = r.lecture_id
             LEFT JOIN
         human_resources.tests t ON s.id = t.section_id
             LEFT JOIN
@@ -341,38 +351,32 @@ SELECT
     section_id,
     section_title,
     section_description,
-    json_agg(
-            json_build_object(
-                    'lecture_id', lecture_id,
-                    'lecture_title', lecture_title,
-                    'lecture_description', lecture_description,
-                    'lecture_video_url', lecture_video_url
-            )
-    ) AS lectures,
-    json_agg(
-            json_build_object(
-                    'test_id', test_id,
-                    'test_name', test_name,
-                    'questions', json_agg(
-                            json_build_object(
-                                    'question_id', question_id,
-                                    'question_body', question_body,
-                                    'answers', json_agg(
-                                            json_build_object(
-                                                    'answer_id', answer_id,
-                                                    'answer_body', answer_body,
-                                                    'answer_is_correct', answer_is_correct,
-                                                    'answer_description', answer_description
-                                            )
-                                               )
-                            )
-                                    )
-            )
-    ) AS tests
+    lecture_id,
+    lecture_title,
+    lecture_description,
+    lecture_video_url,
+    lecture_serial_number,
+    resource_id,
+    resource_title,
+    resource_extension,
+    resource_url,
+    test_id,
+    test_name,
+    question_id,
+    question_body,
+    answer_id,
+    answer_body,
+    answer_is_correct,
+    answer_description
 FROM
     recursive_section
-GROUP BY
-    section_id, section_title, section_description;
+ORDER BY
+    section_id,
+    lecture_id,
+    resource_id,
+    test_id,
+    question_id,
+    answer_id;
 
 -- name: GetCoursesAvatarsByIDs :many
 SELECT id, avatar_url FROM human_resources.courses WHERE id = ANY($1::int[]);
@@ -431,3 +435,62 @@ FROM
     JOIN human_resources.users u ON c.author_id = u.id
 WHERE
     c.id = @id;
+
+
+
+
+
+
+-- name: GetSectionsByCourseID :many
+SELECT
+    id AS section_id,
+    title AS section_title,
+    description AS section_description,
+    serial_number AS section_serial_number,
+    course_id
+FROM
+    human_resources.sections
+WHERE
+    course_id = @course_id;
+
+-- name: GetTestsByCourseID :many
+SELECT
+    s.id AS section_id,
+    t.id AS test_id,
+    t.name AS test_name,
+    t.description AS test_description,
+    t.serial_number AS test_serial_number,
+    q.id AS question_id,
+    q.body AS question_body,
+    a.id AS answer_id,
+    a.body AS answer_body,
+    a.is_correct AS answer_is_correct,
+    a.description AS answer_description
+FROM
+    human_resources.sections s
+        LEFT JOIN human_resources.tests t ON s.id = t.section_id
+        LEFT JOIN human_resources.tests_questions q ON t.id = q.test_id
+        LEFT JOIN human_resources.tests_questions_answers a ON q.id = a.question_id
+WHERE
+    s.course_id = @course_id
+  AND t.id IS NOT NULL;
+
+-- name: GetLecturesByCourseID :many
+SELECT
+    s.id AS section_id,
+    l.id AS lecture_id,
+    l.title AS lecture_title,
+    l.description AS lecture_description,
+    l.video_url AS lecture_video_url,
+    l.serial_number AS lecture_serial_number,
+    r.id AS resource_id,
+    r.title AS resource_title,
+    r.extension AS resource_extension,
+    r.resource_url AS resource_url
+FROM
+    human_resources.sections s
+        LEFT JOIN human_resources.lectures l ON s.id = l.section_id
+        LEFT JOIN human_resources.lectures_resources r ON l.id = r.lecture_id
+WHERE
+    s.course_id = @course_id
+  AND l.id IS NOT NULL;

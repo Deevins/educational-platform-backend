@@ -2,7 +2,6 @@ package course
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/handler"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
@@ -560,36 +559,31 @@ func (s *Service) UpdateCourseGoals(ctx context.Context, courseID int32, goals *
 }
 
 func (s *Service) GetCourseSectionsWithDataByCourseID(ctx context.Context, courseID int32) ([]*model.CourseSection, error) {
-	rows, err := s.repo.GetSectionsWithLecturesAndTestsByCourseID(ctx, courseID)
+	sections, err := s.repo.GetSectionsByCourseID(ctx, courseID)
 	if err != nil {
 		return nil, err
 	}
 
-	var sections []*model.CourseSection
-	for _, row := range rows {
-		var lectures []*model.Lecture
-		var tests []*model.Test
-
-		err := json.Unmarshal(row.Lectures, &lectures)
-		if err != nil {
-			return nil, err
-		}
-
-		err = json.Unmarshal(row.Tests, &tests)
-		if err != nil {
-			return nil, err
-		}
-
-		section := &model.CourseSection{
-			SectionID:          row.SectionID,
-			SectionTitle:       row.SectionTitle,
-			SectionDescription: row.SectionDescription,
-			Lectures:           lectures,
-			Tests:              tests,
-		}
-
-		sections = append(sections, section)
+	tests, err := s.repo.GetTestsByCourseID(ctx, courseID)
+	if err != nil {
+		return nil, err
 	}
 
-	return sections, nil
+	lectures, err := s.repo.GetLecturesByCourseID(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+
+	courseSections := repackData(sections, tests, lectures) // TODO: fix if body in tests_questions are equal - they will be merged
+
+	return courseSections, nil
+}
+
+func (s *Service) CancelPublishing(ctx context.Context, courseID int32) error {
+	_, err := s.repo.CancelPublishingCourse(ctx, courseID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
