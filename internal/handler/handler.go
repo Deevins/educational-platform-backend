@@ -105,7 +105,8 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/update-lecture-title/:lectureID", h.updateLectureTitle)
 		course.POST("/update-test-title/:testID", h.updateTestTitle)
 		course.POST("/add-questions-to-test/:testID", h.addQuestionsToTest)
-		course.POST("/update-lecture-video-url/:lectureID", h.uploadLectureVideo)
+		course.POST("/update-lecture-video-url/:courseID/:lectureID", h.uploadLectureVideo)
+		course.POST("/remove-lecture-video/:courseID/:lectureID", h.removeLectureVideo)
 	}
 	directories := router.Group("/directories")
 	{

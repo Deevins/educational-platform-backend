@@ -233,14 +233,15 @@ type HumanResourcesLastCourseItemsVisitedByUser struct {
 }
 
 type HumanResourcesLecture struct {
-	ID           int32
-	Title        string
-	Description  string
-	SectionID    int32
-	SerialNumber int32
-	VideoUrl     string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	ID                 int32
+	Title              string
+	Description        string
+	LectureVideoLength pgtype.Interval
+	SectionID          int32
+	SerialNumber       int32
+	VideoUrl           string
+	CreatedAt          pgtype.Timestamptz
+	UpdatedAt          pgtype.Timestamptz
 }
 
 type HumanResourcesLecturesResource struct {

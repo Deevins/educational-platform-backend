@@ -641,6 +641,95 @@ func (q *Queries) GetCoursesAvatarsByIDs(ctx context.Context, dollar_1 []int32) 
 	return items, nil
 }
 
+const getFullCourseByID = `-- name: GetFullCourseByID :one
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.subtitle,
+    c.description,
+    c.language,
+    c.level,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_count,
+    c.lectures_length_interval,
+    c.avatar_url AS course_avatar_url,
+    c.preview_video_url,
+    c.status AS course_status,
+    c.created_at AS course_created_at,
+    c.course_goals,
+    c.requirements,
+    c.target_audience,
+    c.author_id,
+    c.category_title AS category_title,
+    u.full_name AS instructor_full_name,
+    u.avatar_url AS instructor_avatar_url,
+    u.id AS instructor_id
+FROM
+    human_resources.courses c
+    JOIN human_resources.users u ON c.author_id = u.id
+WHERE
+    c.id = $1
+`
+
+type GetFullCourseByIDRow struct {
+	CourseID               int32
+	Title                  string
+	Subtitle               *string
+	Description            string
+	Language               *string
+	Level                  *string
+	Rating                 *float64
+	StudentsCount          *int32
+	RatingsCount           *int32
+	LecturesCount          *int32
+	LecturesLengthInterval pgtype.Interval
+	CourseAvatarUrl        *string
+	PreviewVideoUrl        *string
+	CourseStatus           HumanResourcesCourseStatuses
+	CourseCreatedAt        pgtype.Timestamptz
+	CourseGoals            []string
+	Requirements           []string
+	TargetAudience         []string
+	AuthorID               int32
+	CategoryTitle          string
+	InstructorFullName     string
+	InstructorAvatarUrl    *string
+	InstructorID           int32
+}
+
+func (q *Queries) GetFullCourseByID(ctx context.Context, id int32) (*GetFullCourseByIDRow, error) {
+	row := q.db.QueryRow(ctx, getFullCourseByID, id)
+	var i GetFullCourseByIDRow
+	err := row.Scan(
+		&i.CourseID,
+		&i.Title,
+		&i.Subtitle,
+		&i.Description,
+		&i.Language,
+		&i.Level,
+		&i.Rating,
+		&i.StudentsCount,
+		&i.RatingsCount,
+		&i.LecturesCount,
+		&i.LecturesLengthInterval,
+		&i.CourseAvatarUrl,
+		&i.PreviewVideoUrl,
+		&i.CourseStatus,
+		&i.CourseCreatedAt,
+		&i.CourseGoals,
+		&i.Requirements,
+		&i.TargetAudience,
+		&i.AuthorID,
+		&i.CategoryTitle,
+		&i.InstructorFullName,
+		&i.InstructorAvatarUrl,
+		&i.InstructorID,
+	)
+	return &i, err
+}
+
 const getFullCourseInfoWithInstructorByCourseID = `-- name: GetFullCourseInfoWithInstructorByCourseID :one
 SELECT
     c.id AS course_id,
@@ -783,6 +872,31 @@ func (q *Queries) GetInstructorCourses(ctx context.Context, authorID int32) ([]*
 		return nil, err
 	}
 	return items, nil
+}
+
+const getLectureByID = `-- name: GetLectureByID :one
+SELECT id, title, description, video_url, lecture_video_length FROM human_resources.lectures WHERE id = $1
+`
+
+type GetLectureByIDRow struct {
+	ID                 int32
+	Title              string
+	Description        string
+	VideoUrl           string
+	LectureVideoLength pgtype.Interval
+}
+
+func (q *Queries) GetLectureByID(ctx context.Context, id int32) (*GetLectureByIDRow, error) {
+	row := q.db.QueryRow(ctx, getLectureByID, id)
+	var i GetLectureByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.VideoUrl,
+		&i.LectureVideoLength,
+	)
+	return &i, err
 }
 
 const getSectionsWithLecturesAndTestsByCourseID = `-- name: GetSectionsWithLecturesAndTestsByCourseID :many
@@ -955,6 +1069,16 @@ func (q *Queries) RejectCourse(ctx context.Context, id int32) (int32, error) {
 	return id, err
 }
 
+const removeAnswer = `-- name: RemoveAnswer :one
+DELETE FROM human_resources.tests_questions_answers WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) RemoveAnswer(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, removeAnswer, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
 const removeCourse = `-- name: RemoveCourse :one
 DELETE FROM human_resources.courses WHERE id = $1 RETURNING id
 `
@@ -977,6 +1101,16 @@ type RemoveLectureParams struct {
 func (q *Queries) RemoveLecture(ctx context.Context, arg *RemoveLectureParams) (int32, error) {
 	row := q.db.QueryRow(ctx, removeLecture, arg.ID, arg.SectionID)
 	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const removeQuestion = `-- name: RemoveQuestion :one
+DELETE FROM human_resources.tests_questions WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) RemoveQuestion(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, removeQuestion, id)
 	err := row.Scan(&id)
 	return id, err
 }
@@ -1106,6 +1240,29 @@ func (q *Queries) SendCourseToCheck(ctx context.Context, id int32) (int32, error
 	return id, err
 }
 
+const updateAnswer = `-- name: UpdateAnswer :one
+UPDATE human_resources.tests_questions_answers SET body = $1, description = $2, is_correct = $3 WHERE id = $4 RETURNING id
+`
+
+type UpdateAnswerParams struct {
+	Body        string
+	Description string
+	IsCorrect   bool
+	ID          int32
+}
+
+func (q *Queries) UpdateAnswer(ctx context.Context, arg *UpdateAnswerParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateAnswer,
+		arg.Body,
+		arg.Description,
+		arg.IsCorrect,
+		arg.ID,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateCourseAvatar = `-- name: UpdateCourseAvatar :one
 UPDATE human_resources.courses SET avatar_url = $1 WHERE id = $2 RETURNING avatar_url
 `
@@ -1178,6 +1335,22 @@ func (q *Queries) UpdateLectureTitle(ctx context.Context, arg *UpdateLectureTitl
 	return id, err
 }
 
+const updateLectureVideoAddedInfo = `-- name: UpdateLectureVideoAddedInfo :one
+UPDATE human_resources.lectures SET lecture_video_length = $1 WHERE id = $2 RETURNING id
+`
+
+type UpdateLectureVideoAddedInfoParams struct {
+	LectureVideoLength pgtype.Interval
+	ID                 int32
+}
+
+func (q *Queries) UpdateLectureVideoAddedInfo(ctx context.Context, arg *UpdateLectureVideoAddedInfoParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateLectureVideoAddedInfo, arg.LectureVideoLength, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateLectureVideoUrl = `-- name: UpdateLectureVideoUrl :one
 UPDATE human_resources.lectures SET video_url = $1 WHERE id = $2 RETURNING id
 `
@@ -1189,6 +1362,42 @@ type UpdateLectureVideoUrlParams struct {
 
 func (q *Queries) UpdateLectureVideoUrl(ctx context.Context, arg *UpdateLectureVideoUrlParams) (int32, error) {
 	row := q.db.QueryRow(ctx, updateLectureVideoUrl, arg.VideoUrl, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateLecturesInfo = `-- name: UpdateLecturesInfo :one
+UPDATE human_resources.courses
+SET lectures_count = lectures_count + $1,
+    lectures_length_interval = lectures_length_interval + $2
+WHERE id = $3 RETURNING id
+`
+
+type UpdateLecturesInfoParams struct {
+	LecturesCount          *int32
+	LecturesLengthInterval pgtype.Interval
+	ID                     int32
+}
+
+func (q *Queries) UpdateLecturesInfo(ctx context.Context, arg *UpdateLecturesInfoParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateLecturesInfo, arg.LecturesCount, arg.LecturesLengthInterval, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateQuestion = `-- name: UpdateQuestion :one
+UPDATE human_resources.tests_questions SET body = $1 WHERE id = $2 RETURNING id
+`
+
+type UpdateQuestionParams struct {
+	Body string
+	ID   int32
+}
+
+func (q *Queries) UpdateQuestion(ctx context.Context, arg *UpdateQuestionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateQuestion, arg.Body, arg.ID)
 	var id int32
 	err := row.Scan(&id)
 	return id, err

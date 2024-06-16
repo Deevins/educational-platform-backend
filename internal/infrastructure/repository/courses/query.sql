@@ -216,6 +216,18 @@ INSERT INTO human_resources.tests (name,description, section_id, serial_number) 
 -- name: UpdateLectureVideoUrl :one
 UPDATE human_resources.lectures SET video_url = @video_url WHERE id = @id RETURNING id;
 
+-- name: UpdateLecturesInfo :one
+UPDATE human_resources.courses
+SET lectures_count = lectures_count + @lectures_count,
+    lectures_length_interval = lectures_length_interval + @lectures_length_interval
+WHERE id = @id RETURNING id;
+
+-- name: UpdateLectureVideoAddedInfo :one
+UPDATE human_resources.lectures SET lecture_video_length = @lecture_video_length WHERE id = @id RETURNING id;
+
+-- name: GetLectureByID :one
+SELECT id, title, description, video_url, lecture_video_length FROM human_resources.lectures WHERE id = @id;
+
 -- name: UpdateLectureTitle :one
 UPDATE human_resources.lectures SET title = @title WHERE section_id = @section_id AND id = @id RETURNING id;
 
@@ -376,3 +388,46 @@ INSERT INTO human_resources.tests_questions (test_id, body) VALUES (@test_id, @b
 
 -- name: CreateAnswer :one
 INSERT INTO human_resources.tests_questions_answers (question_id, body, description, is_correct) VALUES (@question_id, @body, @description, @is_correct) RETURNING id;
+
+-- name: UpdateQuestion :one
+UPDATE human_resources.tests_questions SET body = @body WHERE id = @id RETURNING id;
+
+-- name: UpdateAnswer :one
+UPDATE human_resources.tests_questions_answers SET body = @body, description = @description, is_correct = @is_correct WHERE id = @id RETURNING id;
+
+-- name: RemoveQuestion :one
+DELETE FROM human_resources.tests_questions WHERE id = @id RETURNING id;
+
+-- name: RemoveAnswer :one
+DELETE FROM human_resources.tests_questions_answers WHERE id = @id RETURNING id;
+
+-- name: GetFullCourseByID :one
+SELECT
+    c.id AS course_id,
+    c.title,
+    c.subtitle,
+    c.description,
+    c.language,
+    c.level,
+    c.rating,
+    c.students_count,
+    c.ratings_count,
+    c.lectures_count,
+    c.lectures_length_interval,
+    c.avatar_url AS course_avatar_url,
+    c.preview_video_url,
+    c.status AS course_status,
+    c.created_at AS course_created_at,
+    c.course_goals,
+    c.requirements,
+    c.target_audience,
+    c.author_id,
+    c.category_title AS category_title,
+    u.full_name AS instructor_full_name,
+    u.avatar_url AS instructor_avatar_url,
+    u.id AS instructor_id
+FROM
+    human_resources.courses c
+    JOIN human_resources.users u ON c.author_id = u.id
+WHERE
+    c.id = @id;

@@ -8,6 +8,7 @@ import (
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses"
 	"github.com/deevins/educational-platform-backend/internal/model"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/samber/lo"
 	"time"
 )
@@ -427,7 +428,7 @@ func (s *Service) UploadCoursePreviewVideo(ctx context.Context, courseID int32, 
 	return url, nil
 }
 
-func (s *Service) UploadCourseLecture(ctx context.Context, lectureID int32, lecture S3.FileDataType) (string, error) {
+func (s *Service) UploadCourseLectureVideo(ctx context.Context, courseID, lectureID int32, lecture S3.FileDataType, lectureLength time.Duration) (string, error) {
 	url, err := s.s3.CreateOne(lecture)
 	if err != nil {
 		return "", err
@@ -441,7 +442,62 @@ func (s *Service) UploadCourseLecture(ctx context.Context, lectureID int32, lect
 		return "", err
 	}
 
+	_, err = s.repo.UpdateLectureVideoAddedInfo(ctx, &courses.UpdateLectureVideoAddedInfoParams{
+		ID:                 lectureID,
+		LectureVideoLength: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000)},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	course, err := s.repo.GetFullCourseByID(ctx, courseID)
+	if err != nil {
+		return "", err
+
+	}
+	lecturesCountDelta := lo.FromPtr(course.LecturesCount) + 1
+
+	_, err = s.repo.UpdateLecturesInfo(ctx, &courses.UpdateLecturesInfoParams{
+		LecturesCount:          &lecturesCountDelta,
+		LecturesLengthInterval: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000)},
+		ID:                     courseID,
+	})
+	if err != nil {
+		return "", err
+	}
+
 	return url, nil
+}
+
+func (s *Service) RemoveCourseLectureVideo(ctx context.Context, courseID, lectureID int32) error {
+	_, err := s.repo.UpdateLectureVideoUrl(ctx, &courses.UpdateLectureVideoUrlParams{
+		VideoUrl: "",
+		ID:       lectureID,
+	})
+
+	course, err := s.repo.GetFullCourseByID(ctx, courseID)
+	if err != nil {
+		return err
+
+	}
+	lecturesCountDelta := lo.FromPtr(course.LecturesCount) - 1
+
+	lecture, err := s.repo.GetLectureByID(ctx, lectureID)
+	if err != nil {
+		return err
+	}
+	_, err = s.repo.UpdateLecturesInfo(ctx, &courses.UpdateLecturesInfoParams{
+		LecturesCount: &lecturesCountDelta,
+		LecturesLengthInterval: pgtype.Interval{
+			Microseconds: course.LecturesLengthInterval.Microseconds - lecture.LectureVideoLength.Microseconds,
+		},
+		ID: courseID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) GetCourseAvatarByCourseID(ctx context.Context, courseID int32) (*model.CourseIDWithResourceLink, error) {

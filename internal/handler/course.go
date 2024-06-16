@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
@@ -11,7 +12,10 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
+	"time"
 )
 
 type CourseService interface {
@@ -33,7 +37,8 @@ type CourseService interface {
 
 	UploadCourseAvatar(ctx context.Context, courseID int32, avatar S3.FileDataType) (string, error)
 	UploadCoursePreviewVideo(ctx context.Context, courseID int32, video S3.FileDataType) (string, error)
-	UploadCourseLecture(ctx context.Context, lectureID int32, lecture S3.FileDataType) (string, error)
+	UploadCourseLectureVideo(ctx context.Context, courseID, lectureID int32, lecture S3.FileDataType, lectureLength time.Duration) (string, error)
+	RemoveCourseLectureVideo(ctx context.Context, courseID, lectureID int32) error
 	//UploadCourseTest(ctx context.Context, sectionID int32, test *model.Test) (string, error)
 
 	GetCourseAvatarByCourseID(ctx context.Context, courseID int32) (*model.CourseIDWithResourceLink, error)
@@ -738,7 +743,7 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 	}
 
 	if ctx.Param("lectureID") == "" {
-		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		ctx.JSON(400, gin.H{"error": "lectureID is empty"})
 		return
 	}
 
@@ -748,23 +753,29 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 		return
 	}
 
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
 	// Открываем файл для чтения
 	f, err := file.Open()
 	if err != nil {
-		// Если файл не удается открыть, возвращаем ошибку с соответствующим статусом и сообщением
-		ctx.JSON(http.StatusInternalServerError, httpResponses.ErrorResponse{
-			Status:  http.StatusInternalServerError,
-			Error:   "Unable to open the file",
-			Details: err,
-		})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to open the file", "details": err})
 		return
 	}
 	defer func(f multipart.File) {
 		err := f.Close()
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, "Unable to close file: %v", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to close file"})
 		}
-	}(f) // Закрываем файл после завершения работы с ним
+	}(f)
 
 	// Чтение содержимого файла
 	fileBytes, err := io.ReadAll(f)
@@ -773,21 +784,59 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 		return
 	}
 
-	url, err := h.cs.UploadCourseLecture(ctx, int32(lectureID), S3.FileDataType{
-		FileName: file.Filename,
-		Data:     fileBytes,
-	})
+	// Сохранение видео в временный файл для анализа
+	tempFilePath := "/tmp/" + file.Filename
+	tempFile, err := os.Create(tempFilePath)
 	if err != nil {
-		model.NewErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary file"})
 		return
+	}
+	defer func(tempFile *os.File) {
+		err := tempFile.Close()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to close temporary file"})
+		}
+	}(tempFile)
 
+	_, err = f.Seek(0, 0)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to seek file"})
+		return
 	}
 
-	ctx.JSON(http.StatusOK, httpResponses.SuccessResponse{
-		Status:  http.StatusOK,
-		Message: "File uploaded successfully",
-		Data:    url, // URL-адрес загруженного файла
-	})
+	_, err = io.Copy(tempFile, f)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to copy file"})
+		return
+	}
+
+	// Получение длительности видео
+	duration, err := getVideoDuration(tempFilePath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get video duration"})
+		return
+	}
+
+	// Преобразование длительности в интервал
+	lengthInterval, err := time.ParseDuration(duration + "s")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid video duration format"})
+		return
+	}
+
+	// Используем метод сервиса для загрузки лекции и обновления базы данных
+	fileData := S3.FileDataType{
+		FileName: file.Filename,
+		Data:     fileBytes,
+	}
+
+	videoURL, err := h.cs.UploadCourseLectureVideo(ctx, int32(courseID), int32(lectureID), fileData, lengthInterval)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload lecture"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"videoURL": videoURL})
 }
 
 func (h *Handler) updateCourseBasicInfo(ctx *gin.Context) {
@@ -859,4 +908,51 @@ func (h *Handler) getCourseGoals(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, goals)
 
+}
+
+func (h *Handler) removeLectureVideo(ctx *gin.Context) {
+	if ctx.Param("lectureID") == "" {
+		ctx.JSON(400, gin.H{"error": "lectureID is empty"})
+		return
+	}
+
+	lectureID, err := strconv.ParseInt(ctx.Param("lectureID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "lectureID is not a number"})
+		return
+	}
+
+	videoURL, err := h.cs.UploadCourseLecture(ctx, int32(lectureID), S3.FileDataType{}, lengthInterval)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload lecture"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"videoURL": videoURL})
+}
+
+type FFProbeOutput struct {
+	Streams []struct {
+		CodecType string `json:"codec_type"`
+		Duration  string `json:"duration"`
+	} `json:"streams"`
+}
+
+func getVideoDuration(filePath string) (string, error) {
+	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "json", filePath)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	var ffprobeOutput FFProbeOutput
+	if err := json.Unmarshal(output, &ffprobeOutput); err != nil {
+		return "", err
+	}
+
+	if len(ffprobeOutput.Streams) > 0 {
+		return ffprobeOutput.Streams[0].Duration, nil
+	}
+
+	return "", nil
 }
