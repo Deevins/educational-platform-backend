@@ -437,8 +437,14 @@ WHERE
     c.id = @id;
 
 
+-- name: GetCourseSectionSerialNumber :one
+SELECT serial_number FROM human_resources.sections WHERE course_id = @id ORDER BY serial_number DESC LIMIT 1;
 
+-- name: GetTestSerialNumber :one
+SELECT serial_number FROM human_resources.tests WHERE section_id = @section_id ORDER BY serial_number DESC LIMIT 1;
 
+-- name: GetLectureSerialNumber :one
+SELECT serial_number FROM human_resources.lectures WHERE section_id = @section_id ORDER BY serial_number DESC LIMIT 1;
 
 
 -- name: GetSectionsByCourseID :many

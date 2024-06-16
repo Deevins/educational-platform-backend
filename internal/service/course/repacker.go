@@ -164,6 +164,7 @@ func repackData(
 			SectionID:          sec.SectionID,
 			SectionTitle:       sec.SectionTitle,
 			SectionDescription: sec.SectionDescription,
+			SerialNumber:       sec.SectionSerialNumber,
 			Lectures:           []*model.Lecture{},
 			Tests:              []*model.Test{},
 		}
@@ -177,6 +178,7 @@ func repackData(
 				ID:           lo.FromPtr(lec.LectureID),
 				SerialNumber: lo.FromPtrOr(lec.LectureSerialNumber, 0),
 				Title:        lo.FromPtrOr(lec.LectureTitle, ""),
+				Type:         "lecture",
 				Description:  lo.FromPtrOr(lec.LectureDescription, ""),
 				VideoURL:     lo.FromPtrOr(lec.LectureVideoUrl, ""),
 			}
@@ -200,6 +202,7 @@ func repackData(
 					TestID:       lo.FromPtrOr(tst.TestID, 0),
 					TestName:     lo.FromPtrOr(tst.TestName, ""),
 					Description:  lo.FromPtrOr(tst.TestDescription, ""),
+					Type:         "test",
 					SerialNumber: lo.FromPtrOr(tst.TestSerialNumber, 0),
 					Questions:    []model.Question{},
 				}

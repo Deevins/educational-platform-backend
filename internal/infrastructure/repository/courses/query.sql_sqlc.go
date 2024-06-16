@@ -622,6 +622,17 @@ func (q *Queries) GetCourseReviewsByCourseID(ctx context.Context, id int32) ([]*
 	return items, nil
 }
 
+const getCourseSectionSerialNumber = `-- name: GetCourseSectionSerialNumber :one
+SELECT serial_number FROM human_resources.sections WHERE course_id = $1 ORDER BY serial_number DESC LIMIT 1
+`
+
+func (q *Queries) GetCourseSectionSerialNumber(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getCourseSectionSerialNumber, id)
+	var serial_number int32
+	err := row.Scan(&serial_number)
+	return serial_number, err
+}
+
 const getCoursesAvatarsByIDs = `-- name: GetCoursesAvatarsByIDs :many
 SELECT id, avatar_url FROM human_resources.courses WHERE id = ANY($1::int[])
 `
@@ -909,6 +920,17 @@ func (q *Queries) GetLectureByID(ctx context.Context, id int32) (*GetLectureByID
 	return &i, err
 }
 
+const getLectureSerialNumber = `-- name: GetLectureSerialNumber :one
+SELECT serial_number FROM human_resources.lectures WHERE section_id = $1 ORDER BY serial_number DESC LIMIT 1
+`
+
+func (q *Queries) GetLectureSerialNumber(ctx context.Context, sectionID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getLectureSerialNumber, sectionID)
+	var serial_number int32
+	err := row.Scan(&serial_number)
+	return serial_number, err
+}
+
 const getLecturesByCourseID = `-- name: GetLecturesByCourseID :many
 SELECT
     s.id AS section_id,
@@ -1154,6 +1176,17 @@ func (q *Queries) GetSectionsWithLecturesAndTestsByCourseID(ctx context.Context,
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTestSerialNumber = `-- name: GetTestSerialNumber :one
+SELECT serial_number FROM human_resources.tests WHERE section_id = $1 ORDER BY serial_number DESC LIMIT 1
+`
+
+func (q *Queries) GetTestSerialNumber(ctx context.Context, sectionID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getTestSerialNumber, sectionID)
+	var serial_number int32
+	err := row.Scan(&serial_number)
+	return serial_number, err
 }
 
 const getTestsByCourseID = `-- name: GetTestsByCourseID :many

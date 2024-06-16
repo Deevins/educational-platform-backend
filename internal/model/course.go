@@ -102,12 +102,12 @@ type CourseSection struct {
 	SectionID          int32      `json:"section_id"`
 	SectionTitle       string     `json:"section_title"`
 	SectionDescription string     `json:"section_description"`
+	SerialNumber       int32      `json:"serial_number"`
 	Lectures           []*Lecture `json:"lectures"`
 	Tests              []*Test    `json:"tests"`
 }
 
 type SectionCreation struct {
-	Title        string `json:"title"`
-	SerialNumber int32  `json:"serial_number"`
-	Description  string `json:"description"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }

@@ -19,6 +19,13 @@ type Service struct {
 	s3   S3.Client
 }
 
+func NewService(repo courses.Querier, s3Client S3.Client) *Service {
+	return &Service{
+		repo: repo,
+		s3:   s3Client,
+	}
+}
+
 func (s *Service) GetCourseGoals(ctx context.Context, courseID int32) (*dto.CourseGoals, error) {
 	course, err := s.repo.GetCourseGoals(ctx, courseID)
 	if err != nil {
@@ -131,11 +138,16 @@ func (s *Service) RemoveSectionByID(ctx context.Context, sectionID int32) error 
 }
 
 func (s *Service) CreateSection(ctx context.Context, courseID int32, input *model.SectionCreation) (int32, error) {
+	latestSerial, err := s.repo.GetCourseSectionSerialNumber(ctx, courseID)
+	if err != nil {
+		return 0, err
+	}
+
 	sectionID, err := s.repo.CreateSection(ctx, &courses.CreateSectionParams{
 		CourseID:     courseID,
+		SerialNumber: latestSerial + 1,
 		Title:        input.Title,
 		Description:  input.Description,
-		SerialNumber: input.SerialNumber,
 	})
 	if err != nil {
 		return 0, err
@@ -145,10 +157,15 @@ func (s *Service) CreateSection(ctx context.Context, courseID int32, input *mode
 }
 
 func (s *Service) CreateCourseTest(ctx context.Context, sectionID int32, test *model.CreateTestBase) (int32, error) {
+	serialNumber, err := s.repo.GetTestSerialNumber(ctx, sectionID)
+	if err != nil {
+		return 0, err
+	}
+
 	id, err := s.repo.CreateTest(ctx, &courses.CreateTestParams{
 		SectionID:    sectionID,
+		SerialNumber: serialNumber + 1,
 		Name:         test.Title,
-		SerialNumber: test.SerialNumber,
 		Description:  test.Description,
 	})
 	if err != nil {
@@ -159,10 +176,15 @@ func (s *Service) CreateCourseTest(ctx context.Context, sectionID int32, test *m
 }
 
 func (s *Service) CreateCourseLecture(ctx context.Context, sectionID int32, lecture *model.CreateLectureBase) (int32, error) {
+	serialNumber, err := s.repo.GetLectureSerialNumber(ctx, sectionID)
+	if err != nil {
+		return 0, err
+	}
+
 	id, err := s.repo.CreateLecture(ctx, &courses.CreateLectureParams{
 		SectionID:    sectionID,
+		SerialNumber: serialNumber + 1,
 		Title:        lecture.Title,
-		SerialNumber: lecture.SerialNumber,
 		Description:  lecture.Description,
 	})
 	if err != nil {
@@ -196,13 +218,6 @@ func (s *Service) AddQuestionsToTest(ctx context.Context, testID int32, question
 	}
 
 	return testID, nil
-}
-
-func NewService(repo courses.Querier, s3Client S3.Client) *Service {
-	return &Service{
-		repo: repo,
-		s3:   s3Client,
-	}
 }
 
 func (s *Service) RemoveCourseByID(ctx context.Context, courseID int32) error {
