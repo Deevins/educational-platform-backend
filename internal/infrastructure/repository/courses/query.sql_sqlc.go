@@ -1345,17 +1345,11 @@ func (q *Queries) RemoveCourse(ctx context.Context, id int32) (int32, error) {
 }
 
 const removeLecture = `-- name: RemoveLecture :one
-DELETE FROM human_resources.lectures WHERE id = $1 AND section_id = $2 RETURNING id
+DELETE FROM human_resources.lectures WHERE id = $1  RETURNING id
 `
 
-type RemoveLectureParams struct {
-	ID        int32
-	SectionID int32
-}
-
-func (q *Queries) RemoveLecture(ctx context.Context, arg *RemoveLectureParams) (int32, error) {
-	row := q.db.QueryRow(ctx, removeLecture, arg.ID, arg.SectionID)
-	var id int32
+func (q *Queries) RemoveLecture(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, removeLecture, id)
 	err := row.Scan(&id)
 	return id, err
 }
@@ -1381,17 +1375,11 @@ func (q *Queries) RemoveSection(ctx context.Context, id int32) (int32, error) {
 }
 
 const removeTest = `-- name: RemoveTest :one
-DELETE FROM human_resources.tests WHERE id = $1 AND section_id = $2 RETURNING id
+DELETE FROM human_resources.tests WHERE id = $1 RETURNING id
 `
 
-type RemoveTestParams struct {
-	ID        int32
-	SectionID int32
-}
-
-func (q *Queries) RemoveTest(ctx context.Context, arg *RemoveTestParams) (int32, error) {
-	row := q.db.QueryRow(ctx, removeTest, arg.ID, arg.SectionID)
-	var id int32
+func (q *Queries) RemoveTest(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, removeTest, id)
 	err := row.Scan(&id)
 	return id, err
 }
@@ -1574,17 +1562,16 @@ func (q *Queries) UpdateCoursePreviewVideo(ctx context.Context, arg *UpdateCours
 }
 
 const updateLectureTitle = `-- name: UpdateLectureTitle :one
-UPDATE human_resources.lectures SET title = $1 WHERE section_id = $2 AND id = $3 RETURNING id
+UPDATE human_resources.lectures SET title = $1 WHERE id = $2 RETURNING id
 `
 
 type UpdateLectureTitleParams struct {
-	Title     string
-	SectionID int32
-	ID        int32
+	Title string
+	ID    int32
 }
 
 func (q *Queries) UpdateLectureTitle(ctx context.Context, arg *UpdateLectureTitleParams) (int32, error) {
-	row := q.db.QueryRow(ctx, updateLectureTitle, arg.Title, arg.SectionID, arg.ID)
+	row := q.db.QueryRow(ctx, updateLectureTitle, arg.Title, arg.ID)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
@@ -1675,17 +1662,16 @@ func (q *Queries) UpdateSectionTitle(ctx context.Context, arg *UpdateSectionTitl
 }
 
 const updateTestTitle = `-- name: UpdateTestTitle :one
-UPDATE human_resources.tests SET name = $1 WHERE section_id = $2 AND id = $3 RETURNING id
+UPDATE human_resources.tests SET name = $1 WHERE  id = $2 RETURNING id
 `
 
 type UpdateTestTitleParams struct {
-	Name      string
-	SectionID int32
-	ID        int32
+	Name string
+	ID   int32
 }
 
 func (q *Queries) UpdateTestTitle(ctx context.Context, arg *UpdateTestTitleParams) (int32, error) {
-	row := q.db.QueryRow(ctx, updateTestTitle, arg.Name, arg.SectionID, arg.ID)
+	row := q.db.QueryRow(ctx, updateTestTitle, arg.Name, arg.ID)
 	var id int32
 	err := row.Scan(&id)
 	return id, err

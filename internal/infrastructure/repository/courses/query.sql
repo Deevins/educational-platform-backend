@@ -229,16 +229,16 @@ UPDATE human_resources.lectures SET lecture_video_length = @lecture_video_length
 SELECT id, title, description, video_url, lecture_video_length FROM human_resources.lectures WHERE id = @id;
 
 -- name: UpdateLectureTitle :one
-UPDATE human_resources.lectures SET title = @title WHERE section_id = @section_id AND id = @id RETURNING id;
+UPDATE human_resources.lectures SET title = @title WHERE id = @id RETURNING id;
 
 -- name: UpdateTestTitle :one
-UPDATE human_resources.tests SET name = @name WHERE section_id = @section_id AND id = @id RETURNING id;
+UPDATE human_resources.tests SET name = @name WHERE  id = @id RETURNING id;
 
 -- name: RemoveLecture :one
-DELETE FROM human_resources.lectures WHERE id = @id AND section_id = @section_id RETURNING id;
+DELETE FROM human_resources.lectures WHERE id = @id  RETURNING id;
 
 -- name: RemoveTest :one
-DELETE FROM human_resources.tests WHERE id = @id AND section_id = @section_id RETURNING id;
+DELETE FROM human_resources.tests WHERE id = @id RETURNING id;
 
 -- name: GetInstructorCourses :many
 SELECT c.id, c.avatar_url, c.title, c.ratings_count, c.rating FROM human_resources.courses c WHERE author_id = @author_id ORDER BY created_at DESC;

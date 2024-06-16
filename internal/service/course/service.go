@@ -7,7 +7,9 @@ import (
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/repository/courses"
 	"github.com/deevins/educational-platform-backend/internal/model"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"time"
 )
@@ -109,9 +111,7 @@ func (s *Service) UpdateSectionTitle(ctx context.Context, sectionID int32, title
 }
 
 func (s *Service) RemoveLectureByID(ctx context.Context, lectureID int32) error {
-	_, err := s.repo.RemoveLecture(ctx, &courses.RemoveLectureParams{
-		ID: lectureID,
-	})
+	_, err := s.repo.RemoveLecture(ctx, lectureID)
 	if err != nil {
 		return err
 	}
@@ -119,9 +119,7 @@ func (s *Service) RemoveLectureByID(ctx context.Context, lectureID int32) error 
 }
 
 func (s *Service) RemoveTestByID(ctx context.Context, testID int32) error {
-	_, err := s.repo.RemoveTest(ctx, &courses.RemoveTestParams{
-		ID: testID,
-	})
+	_, err := s.repo.RemoveTest(ctx, testID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +138,11 @@ func (s *Service) RemoveSectionByID(ctx context.Context, sectionID int32) error 
 func (s *Service) CreateSection(ctx context.Context, courseID int32, input *model.SectionCreation) (int32, error) {
 	latestSerial, err := s.repo.GetCourseSectionSerialNumber(ctx, courseID)
 	if err != nil {
-		return 0, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			latestSerial = 0
+		} else {
+			return 0, err
+		}
 	}
 
 	sectionID, err := s.repo.CreateSection(ctx, &courses.CreateSectionParams{
@@ -157,14 +159,18 @@ func (s *Service) CreateSection(ctx context.Context, courseID int32, input *mode
 }
 
 func (s *Service) CreateCourseTest(ctx context.Context, sectionID int32, test *model.CreateTestBase) (int32, error) {
-	serialNumber, err := s.repo.GetTestSerialNumber(ctx, sectionID)
+	latestSerial, err := s.repo.GetTestSerialNumber(ctx, sectionID)
 	if err != nil {
-		return 0, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			latestSerial = 0
+		} else {
+			return 0, err
+		}
 	}
 
 	id, err := s.repo.CreateTest(ctx, &courses.CreateTestParams{
 		SectionID:    sectionID,
-		SerialNumber: serialNumber + 1,
+		SerialNumber: latestSerial + 1,
 		Name:         test.Title,
 		Description:  test.Description,
 	})
@@ -176,14 +182,18 @@ func (s *Service) CreateCourseTest(ctx context.Context, sectionID int32, test *m
 }
 
 func (s *Service) CreateCourseLecture(ctx context.Context, sectionID int32, lecture *model.CreateLectureBase) (int32, error) {
-	serialNumber, err := s.repo.GetLectureSerialNumber(ctx, sectionID)
+	latestSerial, err := s.repo.GetLectureSerialNumber(ctx, sectionID)
 	if err != nil {
-		return 0, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			latestSerial = 0
+		} else {
+			return 0, err
+		}
 	}
 
 	id, err := s.repo.CreateLecture(ctx, &courses.CreateLectureParams{
 		SectionID:    sectionID,
-		SerialNumber: serialNumber + 1,
+		SerialNumber: latestSerial + 1,
 		Title:        lecture.Title,
 		Description:  lecture.Description,
 	})

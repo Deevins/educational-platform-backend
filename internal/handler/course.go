@@ -501,7 +501,7 @@ func (h *Handler) createLecture(ctx *gin.Context) {
 		return
 	}
 
-	courseID, err := strconv.ParseInt(ctx.Param("sectionID"), 10, 64)
+	sectionID, err := strconv.ParseInt(ctx.Param("sectionID"), 10, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "sectionID is not a number"})
 		return
@@ -512,7 +512,7 @@ func (h *Handler) createLecture(ctx *gin.Context) {
 		return
 	}
 
-	_, err = h.cs.CreateCourseLecture(ctx, int32(courseID), input)
+	_, err = h.cs.CreateCourseLecture(ctx, int32(sectionID), input)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -528,7 +528,7 @@ func (h *Handler) createTest(ctx *gin.Context) {
 		return
 	}
 
-	courseID, err := strconv.ParseInt(ctx.Param("sectionID"), 10, 64)
+	sectionID, err := strconv.ParseInt(ctx.Param("sectionID"), 10, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "sectionID is not a number"})
 		return
@@ -539,7 +539,7 @@ func (h *Handler) createTest(ctx *gin.Context) {
 		return
 	}
 
-	_, err = h.cs.CreateCourseTest(ctx, int32(courseID), input)
+	_, err = h.cs.CreateCourseTest(ctx, int32(sectionID), input)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
