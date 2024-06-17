@@ -15,3 +15,7 @@ sql:
         emit_params_struct_pointers: true
         sql_package: pgx/v5
         overrides:
+          - column: "human_resources.users.instructor_rating"
+            go_type: "float64"
+          - column: "human_resources.courses.category_title"
+            go_type: "string"

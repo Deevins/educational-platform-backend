@@ -7,6 +7,8 @@
 *.so
 *.dylib
 volume
+vendor
+
 
 # Test binary, built with `go test -c`
 *.test
@@ -14,7 +16,7 @@ volume
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories_repo (remove the comment below to include it)
+# Dependency directories (remove the comment below to include it)
 # vendor/
 
 # Go workspace file

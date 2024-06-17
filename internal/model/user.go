@@ -5,7 +5,7 @@ type User struct {
 	FullName    string `json:"full_name"`
 	Description string `json:"description"`
 	Email       string `json:"email"`
-	Avatar      []byte `json:"avatar"`
+	AvatarUrl   string `json:"avatar_url"`
 	PhoneNumber string `json:"phone_number"`
 }
 
@@ -26,13 +26,18 @@ type UserUpdate struct {
 }
 
 type UserUpdateAvatar struct {
-	UserID int32  `json:"user_id"`
-	Avatar []byte `json:"avatar"`
+	UserID    int32  `json:"user_id"`
+	AvatarUrl []byte `json:"avatar_url"`
 }
 
 type UserUpdateTeachingExperience struct {
-	UserID                int32  `json:"user_id"`
-	HasVideoKnowledge     string `json:"has_video_knowledge"`
-	HasPreviousExperience string `json:"has_previous_experience"`
-	CurrentAudienceCount  string `json:"current_audience_count"`
+	UserID             int32  `json:"user_id"`
+	VideoKnowledge     string `json:"video_knowledge"`
+	PreviousExperience string `json:"previous_experience"`
+	CurrentAudience    string `json:"current_audience"`
+}
+
+type UserIDWithResourceLink struct {
+	UserID int32  `json:"user_id"`
+	Link   string `json:"link"`
 }

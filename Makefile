@@ -8,7 +8,7 @@ EDUCATIONAL_PLATFORM_MAIN = $(CURDIR)/cmd/educational-platform/main.go
 
 .PHONY: run
 run:
-	go build "$(EDUCATIONAL_PLATFORM_MAIN)"/cmd/educational-platform
+	docker compose build && docker compose up -d && go mod tidy && go mod vendor && goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP_STRING)" up && go build "$(EDUCATIONAL_PLATFORM_MAIN)" && ./main
 
 .PHONY: migration-create
 migration-create:
@@ -28,19 +28,11 @@ migration-reset:
 
 .PHONY: compose-up
 compose-up:
-	docker-compose build
+	docker compose build && docker compose up -d
 
 .PHONY: compose-rm
 compose-rm:
-	docker-compose down
-
-.PHONY: unit-test
-unit-tests:
-	go test .\internal\app\handlers -v
-
-.PHONY: integration-test
-unit-tests:
-	go test .\test\ -v
+	docker compose down
 
 .PHONY: proto
 proto:
