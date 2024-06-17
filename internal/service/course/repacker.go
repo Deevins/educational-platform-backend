@@ -40,6 +40,7 @@ func repackDBPendingCoursesToModel(courses []*courses.GetAllPendingCoursesRow) [
 			StudentsCount:   lo.FromPtrOr(course.StudentsCount, 0),
 			LecturesLength:  time.Duration(course.LecturesLengthInterval.Microseconds / 1000000 / 60),
 			Description:     course.Description,
+			CreatedDate:     course.CreatedAt.Time,
 		})
 	}
 

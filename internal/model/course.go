@@ -54,6 +54,7 @@ type ShortCourse struct {
 	LecturesCount   int32         `json:"lectures_count" `
 	LecturesLength  time.Duration `json:"lectures_length" `
 	Description     string        `json:"description,omitempty" `
+	CreatedDate     time.Time     `json:"created_date,omitempty" `
 }
 
 // CourseReview represents a review of a course on the course page
