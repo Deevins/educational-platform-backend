@@ -8,7 +8,7 @@ EDUCATIONAL_PLATFORM_MAIN = $(CURDIR)/cmd/educational-platform/main.go
 
 .PHONY: run
 run:
-	docker compose build && docker compose up -d && go mod tidy && go mod vendor && goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP_STRING)" up && go build "$(EDUCATIONAL_PLATFORM_MAIN)" && main.exe
+	docker compose build && docker compose up -d && go mod tidy && go mod vendor && goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP_STRING)" up && go build "$(EDUCATIONAL_PLATFORM_MAIN)" && ./main
 
 .PHONY: migration-create
 migration-create:
