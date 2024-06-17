@@ -113,6 +113,12 @@ func (h *Handler) getLatestEightCourses(ctx *gin.Context) {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
+	fmt.Println(len(courses))
+	if len(courses) < 8 || courses == nil {
+		courses = make([]*model.ShortCourse, 0, 8)
+		ctx.JSON(http.StatusOK, courses)
+		return
+	}
 
 	ctx.JSON(http.StatusOK, courses[:8])
 }
