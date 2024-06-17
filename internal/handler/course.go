@@ -116,7 +116,9 @@ func (h *Handler) getLatestEightCourses(ctx *gin.Context) {
 	fmt.Println(len(courses))
 	if len(courses) < 8 || courses == nil {
 		courses = make([]*model.ShortCourse, 0, 8)
+
 		ctx.JSON(http.StatusOK, courses)
+
 		return
 	}
 
