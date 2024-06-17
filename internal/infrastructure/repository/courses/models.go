@@ -316,13 +316,14 @@ type HumanResourcesTestsQuestionsAnswer struct {
 }
 
 type HumanResourcesTestsUsersAttempt struct {
-	ID            int32
-	TestID        int32
-	UserID        int32
-	AttemptNumber int32
-	Score         int32
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
+	ID                  int32
+	TestID              int32
+	UserID              int32
+	AttemptNumber       int32
+	TotalQuestionsCount int32
+	CorrectAnswersCount int32
+	CreatedAt           pgtype.Timestamptz
+	UpdatedAt           pgtype.Timestamptz
 }
 
 type HumanResourcesThreadsTag struct {

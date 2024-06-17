@@ -895,6 +895,22 @@ func (q *Queries) GetInstructorCourses(ctx context.Context, authorID int32) ([]*
 	return items, nil
 }
 
+const getLatestUserTestAttempt = `-- name: GetLatestUserTestAttempt :one
+SELECT attempt_number FROM human_resources.tests_users_attempts WHERE user_id = $1 AND test_id = $2 ORDER BY created_at DESC LIMIT 1
+`
+
+type GetLatestUserTestAttemptParams struct {
+	UserID int32
+	TestID int32
+}
+
+func (q *Queries) GetLatestUserTestAttempt(ctx context.Context, arg *GetLatestUserTestAttemptParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getLatestUserTestAttempt, arg.UserID, arg.TestID)
+	var attempt_number int32
+	err := row.Scan(&attempt_number)
+	return attempt_number, err
+}
+
 const getLectureByID = `-- name: GetLectureByID :one
 SELECT id, title, description, video_url, lecture_video_length FROM human_resources.lectures WHERE id = $1
 `
@@ -1503,6 +1519,31 @@ UPDATE human_resources.courses SET status = 'PENDING', updated_at = now() WHERE 
 
 func (q *Queries) SendCourseToCheck(ctx context.Context, id int32) (int32, error) {
 	row := q.db.QueryRow(ctx, sendCourseToCheck, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
+const submitTestResult = `-- name: SubmitTestResult :one
+INSERT INTO human_resources.tests_users_attempts (user_id, test_id, attempt_number, correct_answers_count, total_questions_count) VALUES ($1, $2, $3, $4, $5) RETURNING id
+`
+
+type SubmitTestResultParams struct {
+	UserID              int32
+	TestID              int32
+	AttemptNumber       int32
+	CorrectAnswersCount int32
+	TotalQuestionsCount int32
+}
+
+func (q *Queries) SubmitTestResult(ctx context.Context, arg *SubmitTestResultParams) (int32, error) {
+	row := q.db.QueryRow(ctx, submitTestResult,
+		arg.UserID,
+		arg.TestID,
+		arg.AttemptNumber,
+		arg.CorrectAnswersCount,
+		arg.TotalQuestionsCount,
+	)
+	var id int32
 	err := row.Scan(&id)
 	return id, err
 }

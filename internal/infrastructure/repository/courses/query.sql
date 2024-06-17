@@ -507,3 +507,9 @@ DELETE FROM human_resources.tests_questions_answers WHERE question_id = @questio
 
 -- name: UpdateQuestionAnswers :many
 UPDATE human_resources.tests_questions_answers SET body = @body, description = @description, is_correct = @is_correct WHERE question_id = @question_id RETURNING question_id;
+
+-- name: GetLatestUserTestAttempt :one
+SELECT attempt_number FROM human_resources.tests_users_attempts WHERE user_id = @user_id AND test_id = @test_id ORDER BY created_at DESC LIMIT 1;
+
+-- name: SubmitTestResult :one
+INSERT INTO human_resources.tests_users_attempts (user_id, test_id, attempt_number, correct_answers_count, total_questions_count) VALUES (@user_id, @test_id, @attempt_number, @correct_answers_count, @total_questions_count) RETURNING id;

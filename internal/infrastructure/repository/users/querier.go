@@ -18,6 +18,7 @@ type Querier interface {
 	GetUsers(ctx context.Context) ([]*HumanResourcesUser, error)
 	RegisterToCourse(ctx context.Context, arg *RegisterToCourseParams) (int32, error)
 	UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) (int32, error)
+	UpdateCourseStudentsCount(ctx context.Context, id int32) (int32, error)
 	UpdateHasUserTriedInstructor(ctx context.Context, id int32) (int32, error)
 	UpdateUserDescription(ctx context.Context, arg *UpdateUserDescriptionParams) (int32, error)
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) (int32, error)

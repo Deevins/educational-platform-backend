@@ -217,6 +217,16 @@ func (q *Queries) UpdateAvatar(ctx context.Context, arg *UpdateAvatarParams) (in
 	return id, err
 }
 
+const updateCourseStudentsCount = `-- name: UpdateCourseStudentsCount :one
+UPDATE human_resources.courses SET students_count = students_count + 1 WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) UpdateCourseStudentsCount(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, updateCourseStudentsCount, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateHasUserTriedInstructor = `-- name: UpdateHasUserTriedInstructor :one
 UPDATE human_resources.users SET has_user_tried_instructor = true WHERE id = $1 RETURNING id
 `

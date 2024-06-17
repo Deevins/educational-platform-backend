@@ -21,6 +21,33 @@ type Service struct {
 	s3   S3.Client
 }
 
+func (s *Service) SubmitTest(ctx context.Context, testID int32, submission *dto.TestSubmission) error {
+	attemptNumber, err := s.repo.GetLatestUserTestAttempt(ctx, &courses.GetLatestUserTestAttemptParams{
+		TestID: testID,
+		UserID: submission.UserID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			attemptNumber = 0
+		} else {
+			return err
+		}
+	}
+
+	_, err = s.repo.SubmitTestResult(ctx, &courses.SubmitTestResultParams{
+		TestID:              testID,
+		UserID:              submission.UserID,
+		AttemptNumber:       attemptNumber + 1,
+		TotalQuestionsCount: submission.TotalQuestionsCount,
+		CorrectAnswersCount: submission.CorrectAnsweredCount,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewService(repo courses.Querier, s3Client S3.Client) *Service {
 	return &Service{
 		repo: repo,

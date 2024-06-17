@@ -83,7 +83,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/send-for-approval/:courseID", h.sendToCheck)
 		course.POST("/approve-course/:courseID", h.approveCourse)
 		course.POST("/reject-course/:courseID", h.rejectCourse)
-		//course.POST("/upload-course-materials/:courseID", h.uploadCourseMaterials)
 		course.GET("/get-full-course/:courseID", h.getFullCoursePage) // получаем всю инфу о курсе,который находится в статусе READY это где страница на которой его можно проходить
 		course.GET("/get-courses-waiting-for-approval", h.getCoursesWaitingForApproval)
 		course.POST("/upload-course-avatar/:courseID", h.uploadCourseAvatar)
@@ -113,6 +112,8 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 		course.POST("/update-lecture-video-url/:courseID/:lectureID", h.uploadLectureVideo)
 		course.POST("/remove-lecture-video/:courseID/:lectureID", h.removeLectureVideo)
+
+		course.POST("/submit-test/:testID", h.submitTest)
 	}
 	directories := router.Group("/directories")
 	{

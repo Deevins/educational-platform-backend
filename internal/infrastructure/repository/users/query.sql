@@ -39,3 +39,6 @@ INSERT INTO human_resources.courses_attendants (user_id, course_id) VALUES (@use
 
 -- name: CheckIfUserRegisteredToCourse :one
 SELECT * from human_resources.courses_attendants WHERE user_id = @user_id AND course_id = @course_id;
+
+-- name: UpdateCourseStudentsCount :one
+UPDATE human_resources.courses SET students_count = students_count + 1 WHERE id = @id RETURNING id;

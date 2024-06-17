@@ -50,6 +50,11 @@ func (s *Service) RegisterToCourse(ctx context.Context, userID, courseID int32) 
 		return err
 	}
 
+	_, err = s.repo.UpdateCourseStudentsCount(ctx, courseID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

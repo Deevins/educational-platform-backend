@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/asticode/go-astits"
 	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
@@ -65,6 +64,8 @@ type CourseService interface {
 	GetCourseGoals(ctx context.Context, courseID int32) (*dto.CourseGoals, error)
 
 	CancelPublishing(ctx context.Context, courseID int32) error
+
+	SubmitTest(ctx context.Context, testID int32, submission *dto.TestSubmission) error
 }
 
 func (h *Handler) getFullCoursePage(ctx *gin.Context) {
@@ -1061,54 +1062,30 @@ func (h *Handler) cancelPublishing(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "course publishing canceled"})
 }
 
-type FFProbeOutput struct {
-	Streams []struct {
-		CodecType string `json:"codec_type"`
-		Duration  string `json:"duration"`
-	} `json:"streams"`
-}
+func (h *Handler) submitTest(ctx *gin.Context) {
+	if ctx.Param("testID") == "" {
+		ctx.JSON(400, gin.H{"error": "testID is empty"})
+		return
+	}
 
-func getVideoDuration(filePath string) (time.Duration, error) {
-	// Открываем файл
-	file, err := os.Open(filePath)
+	testID, err := strconv.ParseInt(ctx.Param("testID"), 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("unable to open file: %v", err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			fmt.Printf("unable to close file: %v", err)
-		}
-	}(file)
-
-	// Создаем демультиплексор
-	ctx := context.Background()
-	demuxer := astits.NewDemuxer(ctx, file)
-
-	var duration time.Duration
-
-	// Читаем пакеты
-	for {
-		data, err := demuxer.NextData()
-		if err != nil {
-			break
-		}
-		if data == nil {
-			continue
-		}
-
-		// Проверяем тип данных
-		if data.PES != nil && data.PES.Header != nil && data.PES.Header.OptionalHeader != nil {
-			// Получаем PTS (Presentation Time Stamp)
-			pts := data.PES.Header.OptionalHeader.PTS
-			if pts != nil {
-				dur := time.Duration(pts.Base) * time.Second / 90000 // PTS в секундах
-				if dur > duration {
-					duration = dur
-				}
-			}
-		}
+		ctx.JSON(400, gin.H{"error": "testID is not a number"})
+		return
 	}
 
-	return duration, nil
+	var input *dto.TestSubmission
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.cs.SubmitTest(ctx, int32(testID), input)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "test submitted"})
+
 }
