@@ -220,6 +220,7 @@ func repackData(
 
 				if question == nil {
 					newQuestion := model.Question{
+						ID:           lo.FromPtr(tst.QuestionID),
 						QuestionBody: lo.FromPtrOr(tst.QuestionBody, ""),
 						Answers:      []model.Response{},
 					}

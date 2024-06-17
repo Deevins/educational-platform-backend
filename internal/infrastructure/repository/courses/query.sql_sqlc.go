@@ -1364,6 +1364,30 @@ func (q *Queries) RemoveQuestion(ctx context.Context, id int32) (int32, error) {
 	return id, err
 }
 
+const removeQuestionAnswers = `-- name: RemoveQuestionAnswers :many
+DELETE FROM human_resources.tests_questions_answers WHERE question_id = $1 RETURNING id
+`
+
+func (q *Queries) RemoveQuestionAnswers(ctx context.Context, questionID int32) ([]int32, error) {
+	rows, err := q.db.Query(ctx, removeQuestionAnswers, questionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeSection = `-- name: RemoveSection :one
 DELETE FROM human_resources.sections WHERE id = $1 RETURNING id
 `
@@ -1643,6 +1667,42 @@ func (q *Queries) UpdateQuestion(ctx context.Context, arg *UpdateQuestionParams)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
+}
+
+const updateQuestionAnswers = `-- name: UpdateQuestionAnswers :many
+UPDATE human_resources.tests_questions_answers SET body = $1, description = $2, is_correct = $3 WHERE question_id = $4 RETURNING question_id
+`
+
+type UpdateQuestionAnswersParams struct {
+	Body        string
+	Description string
+	IsCorrect   bool
+	QuestionID  int32
+}
+
+func (q *Queries) UpdateQuestionAnswers(ctx context.Context, arg *UpdateQuestionAnswersParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, updateQuestionAnswers,
+		arg.Body,
+		arg.Description,
+		arg.IsCorrect,
+		arg.QuestionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var question_id int32
+		if err := rows.Scan(&question_id); err != nil {
+			return nil, err
+		}
+		items = append(items, question_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateSectionTitle = `-- name: UpdateSectionTitle :one

@@ -44,6 +44,7 @@ type Querier interface {
 	RemoveCourse(ctx context.Context, id int32) (int32, error)
 	RemoveLecture(ctx context.Context, id int32) (int32, error)
 	RemoveQuestion(ctx context.Context, id int32) (int32, error)
+	RemoveQuestionAnswers(ctx context.Context, questionID int32) ([]int32, error)
 	RemoveSection(ctx context.Context, id int32) (int32, error)
 	RemoveTest(ctx context.Context, id int32) (int32, error)
 	SearchCoursesByTitle(ctx context.Context, title string) ([]*SearchCoursesByTitleRow, error)
@@ -58,6 +59,7 @@ type Querier interface {
 	UpdateLectureVideoUrl(ctx context.Context, arg *UpdateLectureVideoUrlParams) (int32, error)
 	UpdateLecturesInfo(ctx context.Context, arg *UpdateLecturesInfoParams) (int32, error)
 	UpdateQuestion(ctx context.Context, arg *UpdateQuestionParams) (int32, error)
+	UpdateQuestionAnswers(ctx context.Context, arg *UpdateQuestionAnswersParams) ([]int32, error)
 	UpdateSectionTitle(ctx context.Context, arg *UpdateSectionTitleParams) (int32, error)
 	UpdateTestTitle(ctx context.Context, arg *UpdateTestTitleParams) (int32, error)
 }

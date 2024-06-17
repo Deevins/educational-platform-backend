@@ -2,8 +2,8 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/asticode/go-astits"
 	"github.com/deevins/educational-platform-backend/internal/dto"
 	"github.com/deevins/educational-platform-backend/internal/infrastructure/S3"
 	"github.com/deevins/educational-platform-backend/internal/model"
@@ -13,7 +13,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"time"
 )
@@ -33,7 +32,11 @@ type CourseService interface {
 	CreateSection(ctx context.Context, courseID int32, input *model.SectionCreation) (int32, error)
 	CreateCourseTest(ctx context.Context, sectionID int32, test *model.CreateTestBase) (int32, error)
 	CreateCourseLecture(ctx context.Context, sectionID int32, lecture *model.CreateLectureBase) (int32, error)
-	AddQuestionsToTest(ctx context.Context, testID int32, question []*model.Question) (int32, error)
+
+	AddQuestionsToTest(ctx context.Context, testID int32, questions []*model.Question) (int32, error)
+	AddQuestionToTest(ctx context.Context, testID int32, question *model.Question) (int32, error)
+	RemoveQuestionFromTest(ctx context.Context, questionID int32) error
+	EditTestQuestion(ctx context.Context, questionID int32, question *model.Question) (int32, error)
 
 	UploadCourseAvatar(ctx context.Context, courseID int32, avatar S3.FileDataType) (string, error)
 	UploadCoursePreviewVideo(ctx context.Context, courseID int32, video S3.FileDataType) (string, error)
@@ -737,6 +740,83 @@ func (h *Handler) addQuestionsToTest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "questions added"})
 }
 
+func (h *Handler) addQuestionToTest(ctx *gin.Context) {
+	if ctx.Param("testID") == "" {
+		ctx.JSON(400, gin.H{"error": "testID is empty"})
+		return
+	}
+
+	testID, err := strconv.ParseInt(ctx.Param("testID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "testID is not a number"})
+		return
+	}
+
+	var input *model.Question
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	_, err = h.cs.AddQuestionToTest(ctx, int32(testID), input)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "questions added"})
+}
+
+func (h *Handler) removeQuestionFromTest(ctx *gin.Context) {
+	if ctx.Param("questionID") == "" {
+		ctx.JSON(400, gin.H{"error": "questionID is empty"})
+		return
+	}
+
+	questionID, err := strconv.ParseInt(ctx.Param("questionID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "questionID is not a number"})
+		return
+	}
+
+	err = h.cs.RemoveQuestionFromTest(ctx, int32(questionID))
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "question removed"})
+}
+
+func (h *Handler) editTestQuestion(ctx *gin.Context) {
+	if ctx.Param("questionID") == "" {
+		ctx.JSON(400, gin.H{"error": "questionID is empty"})
+		return
+	}
+
+	questionID, err := strconv.ParseInt(ctx.Param("questionID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "questionID is not a number"})
+		return
+	}
+
+	var input *model.Question
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	_, err = h.cs.EditTestQuestion(ctx, int32(questionID), input)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "question edited"})
+}
+
 func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
@@ -786,11 +866,27 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 		return
 	}
 
+	// Создание временной директории, если она не существует
+	tempDir := "/tmp/uploaded_videos/"
+	if _, err := os.Stat(tempDir); os.IsNotExist(err) {
+		err := os.MkdirAll(tempDir, os.ModePerm)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary directory"})
+			return
+		}
+		defer func() {
+			err := os.RemoveAll(tempDir)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove temporary directory"})
+			}
+		}()
+	}
+
 	// Сохранение видео в временный файл для анализа
-	tempFilePath := "/tmp/" + file.Filename
+	tempFilePath := tempDir + file.Filename
 	tempFile, err := os.Create(tempFilePath)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary file"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary file", "details": err})
 		return
 	}
 	defer func(tempFile *os.File) {
@@ -813,18 +909,11 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 	}
 
 	// Получение длительности видео
-	duration, err := getVideoDuration(tempFilePath)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get video duration"})
-		return
-	}
-
-	// Преобразование длительности в интервал
-	lengthInterval, err := time.ParseDuration(duration + "s")
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid video duration format"})
-		return
-	}
+	//_, err := getVideoDuration(tempFilePath)
+	//if err != nil {
+	//	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get video duration"})
+	//	return
+	//}
 
 	// Используем метод сервиса для загрузки лекции и обновления базы данных
 	fileData := S3.FileDataType{
@@ -832,13 +921,13 @@ func (h *Handler) uploadLectureVideo(ctx *gin.Context) {
 		Data:     fileBytes,
 	}
 
-	videoURL, err := h.cs.UploadCourseLectureVideo(ctx, int32(courseID), int32(lectureID), fileData, lengthInterval)
+	videoURL, err := h.cs.UploadCourseLectureVideo(ctx, int32(courseID), int32(lectureID), fileData, time.Minute*30)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload lecture"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"videoURL": videoURL})
+	ctx.JSON(http.StatusOK, gin.H{"video_url": videoURL})
 }
 
 func (h *Handler) updateCourseBasicInfo(ctx *gin.Context) {
@@ -937,7 +1026,7 @@ func (h *Handler) removeLectureVideo(ctx *gin.Context) {
 
 	err = h.cs.RemoveCourseLectureVideo(ctx, int32(courseID), int32(lectureID))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload lecture"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove lecture"})
 		return
 	}
 
@@ -979,21 +1068,47 @@ type FFProbeOutput struct {
 	} `json:"streams"`
 }
 
-func getVideoDuration(filePath string) (string, error) {
-	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "json", filePath)
-	output, err := cmd.Output()
+func getVideoDuration(filePath string) (time.Duration, error) {
+	// Открываем файл
+	file, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return 0, fmt.Errorf("unable to open file: %v", err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("unable to close file: %v", err)
+		}
+	}(file)
+
+	// Создаем демультиплексор
+	ctx := context.Background()
+	demuxer := astits.NewDemuxer(ctx, file)
+
+	var duration time.Duration
+
+	// Читаем пакеты
+	for {
+		data, err := demuxer.NextData()
+		if err != nil {
+			break
+		}
+		if data == nil {
+			continue
+		}
+
+		// Проверяем тип данных
+		if data.PES != nil && data.PES.Header != nil && data.PES.Header.OptionalHeader != nil {
+			// Получаем PTS (Presentation Time Stamp)
+			pts := data.PES.Header.OptionalHeader.PTS
+			if pts != nil {
+				dur := time.Duration(pts.Base) * time.Second / 90000 // PTS в секундах
+				if dur > duration {
+					duration = dur
+				}
+			}
+		}
 	}
 
-	var ffprobeOutput FFProbeOutput
-	if err := json.Unmarshal(output, &ffprobeOutput); err != nil {
-		return "", err
-	}
-
-	if len(ffprobeOutput.Streams) > 0 {
-		return ffprobeOutput.Streams[0].Duration, nil
-	}
-
-	return "", nil
+	return duration, nil
 }

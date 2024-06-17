@@ -500,3 +500,10 @@ FROM
 WHERE
     s.course_id = @course_id
   AND l.id IS NOT NULL;
+
+
+-- name: RemoveQuestionAnswers :many
+DELETE FROM human_resources.tests_questions_answers WHERE question_id = @question_id RETURNING id;
+
+-- name: UpdateQuestionAnswers :many
+UPDATE human_resources.tests_questions_answers SET body = @body, description = @description, is_correct = @is_correct WHERE question_id = @question_id RETURNING question_id;

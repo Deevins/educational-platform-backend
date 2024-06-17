@@ -15,6 +15,7 @@ type Test struct {
 }
 
 type Question struct {
+	ID           int32      `json:"id,omitempty"`
 	QuestionBody string     `json:"question_body"`
 	Answers      []Response `json:"answers"`
 }

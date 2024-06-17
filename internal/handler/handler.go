@@ -105,7 +105,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		course.POST("/update-section-title/:sectionID", h.updateSectionTitle)
 		course.POST("/update-lecture-title/:lectureID", h.updateLectureTitle)
 		course.POST("/update-test-title/:testID", h.updateTestTitle)
+
 		course.POST("/add-questions-to-test/:testID", h.addQuestionsToTest)
+		course.POST("/add-question-to-test/:testID", h.addQuestionToTest)
+		course.POST("/edit-question/:questionID", h.editTestQuestion)
+		course.POST("/remove-question-from-test/:questionID", h.removeQuestionFromTest)
+
 		course.POST("/update-lecture-video-url/:courseID/:lectureID", h.uploadLectureVideo)
 		course.POST("/remove-lecture-video/:courseID/:lectureID", h.removeLectureVideo)
 	}

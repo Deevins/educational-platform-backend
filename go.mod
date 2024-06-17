@@ -14,7 +14,10 @@ require (
 )
 
 require (
+	github.com/3d0c/gmf v0.0.0-20220906170454-be727bc5b56c // indirect
 	github.com/AlexEidt/Vidio v1.5.1 // indirect
+	github.com/asticode/go-astikit v0.30.0 // indirect
+	github.com/asticode/go-astits v1.13.0 // indirect
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect

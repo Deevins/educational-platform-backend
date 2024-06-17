@@ -230,6 +230,68 @@ func (s *Service) AddQuestionsToTest(ctx context.Context, testID int32, question
 	return testID, nil
 }
 
+func (s *Service) AddQuestionToTest(ctx context.Context, testID int32, question *model.Question) (int32, error) {
+	questionID, err := s.repo.CreateQuestion(ctx, &courses.CreateQuestionParams{
+		TestID: testID,
+		Body:   question.QuestionBody,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, answer := range question.Answers {
+		_, err = s.repo.CreateAnswer(ctx, &courses.CreateAnswerParams{
+			Description: answer.Description,
+			QuestionID:  questionID,
+			Body:        answer.ResponseText,
+			IsCorrect:   answer.IsCorrect,
+		})
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return testID, nil
+}
+
+func (s *Service) RemoveQuestionFromTest(ctx context.Context, questionID int32) error {
+	_, err := s.repo.RemoveQuestion(ctx, questionID)
+	if err != nil {
+		return err
+	}
+	_, err = s.repo.RemoveQuestionAnswers(ctx, questionID)
+	if err != nil {
+		return err
+
+	}
+
+	return nil
+}
+
+func (s *Service) EditTestQuestion(ctx context.Context, questionID int32, question *model.Question) (int32, error) {
+	_, err := s.repo.UpdateQuestion(ctx, &courses.UpdateQuestionParams{
+		ID:   questionID,
+		Body: question.QuestionBody,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, answer := range question.Answers {
+		_, err = s.repo.UpdateQuestionAnswers(ctx, &courses.UpdateQuestionAnswersParams{
+			Description: answer.Description,
+			QuestionID:  questionID,
+			Body:        answer.ResponseText,
+			IsCorrect:   answer.IsCorrect,
+		})
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return questionID, nil
+}
+
 func (s *Service) RemoveCourseByID(ctx context.Context, courseID int32) error {
 	// TODO: remove connected resources from S3 and DB
 	_, err := s.repo.RemoveCourse(ctx, courseID)
@@ -468,7 +530,7 @@ func (s *Service) UploadCourseLectureVideo(ctx context.Context, courseID, lectur
 
 	_, err = s.repo.UpdateLectureVideoAddedInfo(ctx, &courses.UpdateLectureVideoAddedInfoParams{
 		ID:                 lectureID,
-		LectureVideoLength: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000)},
+		LectureVideoLength: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000), Valid: true},
 	})
 	if err != nil {
 		return "", err
@@ -483,7 +545,7 @@ func (s *Service) UploadCourseLectureVideo(ctx context.Context, courseID, lectur
 
 	_, err = s.repo.UpdateLecturesInfo(ctx, &courses.UpdateLecturesInfoParams{
 		LecturesCount:          &lecturesCountDelta,
-		LecturesLengthInterval: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000)},
+		LecturesLengthInterval: pgtype.Interval{Microseconds: int64(lectureLength.Seconds() * 1000000), Valid: true},
 		ID:                     courseID,
 	})
 	if err != nil {
@@ -514,6 +576,7 @@ func (s *Service) RemoveCourseLectureVideo(ctx context.Context, courseID, lectur
 		LecturesCount: &lecturesCountDelta,
 		LecturesLengthInterval: pgtype.Interval{
 			Microseconds: course.LecturesLengthInterval.Microseconds - lecture.LectureVideoLength.Microseconds,
+			Valid:        true,
 		},
 		ID: courseID,
 	})
