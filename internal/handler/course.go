@@ -1087,5 +1087,36 @@ func (h *Handler) submitTest(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "test submitted"})
+}
 
+func (h *Handler) submitCourseReview(ctx *gin.Context) {
+
+	if ctx.Param("courseID") == "" {
+		ctx.JSON(400, gin.H{"error": "courseID is empty"})
+		return
+	}
+
+	courseID, err := strconv.ParseInt(ctx.Param("courseID"), 10, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "courseID is not a number"})
+		return
+	}
+
+	var input *model.CourseReview
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.us.SubmitCourseReview(ctx, int32(courseID), &model.CourseReview{
+		FullName:   "",
+		AvatarURL:  "",
+		Rating:     0,
+		ReviewText: "",
+		CreatedAt:  time.Time{},
+	})
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
 }

@@ -22,6 +22,7 @@ type UserService interface {
 	UpdateUserInfo(ctx context.Context, user *model.UserUpdate) error
 	CheckIfUserRegisteredToCourse(ctx context.Context, userID, courseID int32) (bool, error)
 	RegisterToCourse(ctx context.Context, userID, courseID int32) error
+	SubmitCourseReview(ctx context.Context, courseID int32, review *model.CourseReview) error
 }
 
 type ThreadService interface{}
@@ -70,6 +71,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		user.POST("/register-on-course", h.registerOnCourse)
 		user.GET("/check-if-user-registered-to-course", h.checkIfUserRegisteredToCourse)
 		user.GET("/get-all-courses-by-instructor-id/:instructorID", h.getAllCoursesByInstructorID) // OK для вывода курсов по id инструктора которые он создал
+		user.POST("/submit-course-review/:courseID", h.submitCourseReview)
 	}
 	course := router.Group("/courses")
 	{

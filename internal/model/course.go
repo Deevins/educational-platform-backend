@@ -60,7 +60,7 @@ type ShortCourse struct {
 // CourseReview represents a review of a course on the course page
 type CourseReview struct {
 	FullName   string    `json:"full_name"`
-	AvatarURL  string    `json:"avatar"`
+	AvatarURL  string    `json:"avatar_url"`
 	Rating     int32     `json:"rating"`
 	ReviewText string    `json:"review_text"`
 	CreatedAt  time.Time `json:"created_at"`

@@ -174,3 +174,8 @@ func (s *Service) UpdateUserInfo(ctx context.Context, user *model.UserUpdate) er
 
 	return nil
 }
+
+func (s *Service) SubmitCourseReview(ctx context.Context, courseID int32, review *model.CourseReview) error {
+	//TODO implement me
+	panic("implement me")
+}
